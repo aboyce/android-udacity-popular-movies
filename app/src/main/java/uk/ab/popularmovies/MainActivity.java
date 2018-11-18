@@ -1,5 +1,6 @@
 package uk.ab.popularmovies;
 
+import android.app.Activity;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -9,6 +10,7 @@ import android.util.Log;
 import android.view.Menu;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.util.List;
 
@@ -43,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         mMoviesRecyclerView.setAdapter(mMovieAdapter);
 
         // TODO: Replace this, rename this, and pass in the required data.
-        new FetchDiscoverMoviesTask().execute();
+        new FetchDiscoverMoviesTask(this).execute();
     }
 
     @Override
@@ -53,6 +55,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public class FetchDiscoverMoviesTask extends AsyncTask<Void, Void, List<Movie>> {
+
+        private final WeakReference<Activity> weakActivity;
+
+        public FetchDiscoverMoviesTask(Activity activity) {
+            this.weakActivity = new WeakReference<>(activity);
+        }
 
         @Override
         protected void onPreExecute() {
@@ -66,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
                 // Get the generated request URL.
                 // TODO: Swap this overload out for one that takes a sorting order.
                 Log.d(TAG, "Will attempt to get the movie request URL.");
-                URL moviesRequestUrl = TMDbPreferences.getDiscoverURL();
+                URL moviesRequestUrl = TMDbPreferences.getDiscoverURL(weakActivity.get());
                 Log.d(TAG, "Retrieved the URL for the movie request.");
 
                 // Use the generated URL to go and retrieve the movie JSON data.

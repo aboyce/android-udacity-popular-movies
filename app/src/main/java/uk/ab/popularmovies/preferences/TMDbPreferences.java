@@ -1,6 +1,6 @@
 package uk.ab.popularmovies.preferences;
 
-import android.content.res.Resources;
+import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
 
@@ -32,11 +32,18 @@ public class TMDbPreferences {
     // This Class should not need to be instantiated.
     private TMDbPreferences() { }
 
-    private static String getApiKey() {
-        // FIXME: This is not returning the API Key!!
+    private static String getApiKey(Context context) {
+
+        if (context == null) {
+            String message = "A valid context was not provided to access the API key.";
+            Log.e(TAG, message);
+            throw new IllegalArgumentException(message);
+        }
+
         String apiKey = null;
         try {
-            apiKey = Resources.getSystem().getString(R.string.movie_db_api_key);
+            // Extract the API key using the provided context.
+            apiKey = context.getString(R.string.movie_db_api_key);
             Log.d(TAG, "Located the API Key.");
         } catch (Exception e) {
             e.printStackTrace();
@@ -45,14 +52,14 @@ public class TMDbPreferences {
         return apiKey;
     }
 
-    public static URL getDiscoverURL() {
-        return getDiscoverURL(API_SORT_BY_DEFAULT);
+    public static URL getDiscoverURL(Context context) {
+        return getDiscoverURL(context, API_SORT_BY_DEFAULT);
     }
 
-    public static URL getDiscoverURL(MovieSort sortOrder) {
+    public static URL getDiscoverURL(Context context, MovieSort sortOrder) {
 
         URL discoverUrl = null;
-        String apiKey = getApiKey();
+        String apiKey = getApiKey(context);
 
         Uri builtUri = Uri.parse(API_BASE_URL + "/" + API_VERSION + "/" + API_DISCOVER)
                 .buildUpon()
