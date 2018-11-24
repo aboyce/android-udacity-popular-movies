@@ -22,7 +22,7 @@
             android:layout_height="100dp"
             android:layout_gravity="center"/>
         <TextView
-            android:id="@+id/movie_description_tv"
+            android:id="@+id/movie_plot_synopsis_tv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
         <TextView

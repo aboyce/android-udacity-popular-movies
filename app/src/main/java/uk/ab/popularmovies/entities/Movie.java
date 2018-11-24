@@ -1,8 +1,11 @@
 package uk.ab.popularmovies.entities;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import java.time.LocalDate;
 
-public class Movie {
+public class Movie implements Parcelable {
 
     private Integer id;
     private String title;
@@ -11,6 +14,16 @@ public class Movie {
     private String plotSynopsis;
     private Double userRating;
     private LocalDate releaseDate;
+
+    public Movie(Parcel parcel) {
+        this.id = parcel.readInt();
+        this.title = parcel.readString();
+        this.imagePath = parcel.readString();
+        this.backdropImagePath = parcel.readString();
+        this.plotSynopsis = parcel.readString();
+        this.userRating = parcel.readDouble();
+        this.releaseDate = LocalDate.ofEpochDay(parcel.readLong());
+    }
 
     public Movie(Integer id, String title, String imagePath, String backdropImagePath, String plotSynopsis, Double userRating, LocalDate releaseDate) {
         this.id = id;
@@ -74,5 +87,33 @@ public class Movie {
         }
         // Because we have checked that there is at least one image, we know at least one is fine.
         return (this.imagePath != null) ? this.imagePath : this.backdropImagePath;
+    }
+
+    public static final Creator<Movie> CREATOR = new Creator<Movie>() {
+        @Override
+        public Movie createFromParcel(Parcel parcel) {
+            return new Movie(parcel);
+        }
+
+        @Override
+        public Movie[] newArray(int size) {
+            return new Movie[size];
+        }
+    };
+
+    @Override
+    public void writeToParcel(Parcel parcel, int flags) {
+        parcel.writeInt(this.id);
+        parcel.writeString(this.title);
+        parcel.writeString(this.imagePath);
+        parcel.writeString(this.backdropImagePath);
+        parcel.writeString(this.plotSynopsis);
+        parcel.writeDouble(this.userRating);
+        parcel.writeLong(this.releaseDate.toEpochDay());
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
     }
 }
