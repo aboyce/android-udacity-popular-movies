@@ -3,6 +3,7 @@ package uk.ab.popularmovies.view;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +20,8 @@ import uk.ab.popularmovies.preferences.TMDbPreferences;
 
 public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHolder> {
 
+    private static final String TAG = MovieAdapter.class.getSimpleName();
+
     private List<Movie> mMovies;
 
     private Context context;
@@ -28,6 +31,8 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
     }
 
     static class MovieViewHolder extends RecyclerView.ViewHolder {
+
+        private static final String TAG = MovieViewHolder.class.getSimpleName();
 
         final ImageView mMovieImageImageView;
 
@@ -44,7 +49,16 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
         LayoutInflater inflater = LayoutInflater.from(viewGroup.getContext());
         // Inflate the 'movie_item' view.
         View view = inflater.inflate(R.layout.movie_item, viewGroup, false);
-        return new MovieViewHolder(view);
+        MovieViewHolder viewHolder = new MovieViewHolder(view);
+
+        // Handle when a movie has been clicked on, let handleMovieClick start the intent.
+        view.setOnClickListener(clickedView -> {
+            Integer moviePosition = viewHolder.getAdapterPosition();
+            Log.i(TAG, "Movie at position " + moviePosition + " has been clicked on.");
+            handleMovieClick(moviePosition);
+        });
+
+        return viewHolder;
     }
 
     @Override
@@ -63,6 +77,14 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
     public int getItemCount() {
         // Return the number of movies if it is possible.
         return (mMovies != null) ? mMovies.size() : 0;
+    }
+
+    private void handleMovieClick(int moviePosition) {
+        Movie movie = mMovies.get(moviePosition);
+        if (movie == null) {
+            Log.wtf(TAG, "An invalid movie was clicked on at position " + moviePosition + ".");
+        }
+        Log.d(TAG, "Movie '" + movie.getTitle() + "' was clicked on.");
     }
 
     public void setMovies(List<Movie> movies) {

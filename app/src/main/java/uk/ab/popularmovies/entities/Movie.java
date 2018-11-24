@@ -46,7 +46,7 @@ public class Movie {
         return imagePath;
     }
 
-    public String getbackdropImagePath() {
+    public String getBackdropImagePath() {
         return backdropImagePath;
     }
 
