@@ -19,6 +19,7 @@ public class MovieUtility {
     private static final String JSON_MOVIE_ID = "id";
     private static final String JSON_MOVIE_TITLE = "title";
     private static final String JSON_MOVIE_IMAGE_PATH = "poster_path";
+    private static final String JSON_MOVIE_BACKDROP_IMAGE_PATH = "backdrop_path";
     private static final String JSON_MOVIE_PLOT_SYNOPSIS = "overview";
     private static final String JSON_MOVIE_USER_RATING = "vote_average";
     private static final String JSON_MOVIE_RELEASE_DATE = "release_date";
@@ -85,6 +86,7 @@ public class MovieUtility {
         Integer id = null;
         String title = null;
         String imagePath = null;
+        String backdropImagePath = null;
         String plotSynopsis = null;
         Double userRating = null;
         String releaseDate = null;
@@ -100,6 +102,10 @@ public class MovieUtility {
         }
         if (!json.has(JSON_MOVIE_IMAGE_PATH)) {
             Log.w(TAG, "The JSON object does not contain a value for the image path.");
+            return null;
+        }
+        if (!json.has(JSON_MOVIE_BACKDROP_IMAGE_PATH)) {
+            Log.w(TAG, "The JSON object does not contain a value for the backdrop image path.");
             return null;
         }
         if (!json.has(JSON_MOVIE_PLOT_SYNOPSIS)) {
@@ -119,7 +125,8 @@ public class MovieUtility {
         try {
             id = json.getInt(JSON_MOVIE_ID);
             title = json.getString(JSON_MOVIE_TITLE);
-            imagePath = json.getString(JSON_MOVIE_IMAGE_PATH);
+            imagePath = json.isNull(JSON_MOVIE_IMAGE_PATH) ? null : json.getString(JSON_MOVIE_IMAGE_PATH);
+            backdropImagePath = json.isNull(JSON_MOVIE_BACKDROP_IMAGE_PATH) ? null : json.getString(JSON_MOVIE_BACKDROP_IMAGE_PATH);
             plotSynopsis = json.getString(JSON_MOVIE_PLOT_SYNOPSIS);
             userRating = json.getDouble(JSON_MOVIE_USER_RATING);
             releaseDate = json.getString(JSON_MOVIE_RELEASE_DATE);
@@ -131,11 +138,12 @@ public class MovieUtility {
         Log.v(TAG, "Movie id: '" + id + "'.");
         Log.v(TAG, "Movie title: '" + title + "'.");
         Log.v(TAG, "Movie image path: '" + imagePath + "'.");
+        Log.v(TAG, "Movie backdrop image path: '" + backdropImagePath + "'.");
         Log.v(TAG, "Movie plot synopsis: '" + plotSynopsis + "'.");
         Log.v(TAG, "Movie user rating: '" + userRating + "'.");
         Log.v(TAG, "Movie release date: '" + releaseDate + "'.");
 
         // Combine all the extracted properties into a Movie object.
-        return new Movie(id, title, imagePath, plotSynopsis, userRating, releaseDate);
+        return new Movie(id, title, imagePath, backdropImagePath, plotSynopsis, userRating, releaseDate);
     }
 }

@@ -16,6 +16,8 @@ public class TMDbPreferences {
 
     // API Configuration Values.
     private static final String API_BASE_URL = "https://api.themoviedb.org";
+    private static final String API_BASE_IMAGE_URL = "https://image.tmdb.org/t/p/";
+    private static final String API_IMAGE_SIZE = "w500";
     private static final String API_VERSION = "3";
     private static final String API_KEY = "api_key";
     private static final String API_DISCOVER = "discover/movie";
@@ -73,7 +75,7 @@ public class TMDbPreferences {
             discoverUrl = new URL(builtUri.toString());
         } catch (MalformedURLException e) {
             e.printStackTrace();
-            Log.e(TAG, "Enable to parse the built discover URL");
+            Log.e(TAG, "Unable to parse the built discover URL, message: " + e.getMessage());
         }
 
         // Remove the API for logging purposes.
@@ -81,5 +83,24 @@ public class TMDbPreferences {
         Log.d(TAG, "Built the discover URL: " + cleanUrl);
 
         return discoverUrl;
+    }
+
+    public static URL getImageURL(String imagePath) {
+
+        if (imagePath == null || imagePath.equals("")) {
+            Log.e(TAG, "The image path for the image URL was null or empty.");
+            return null;
+        }
+
+        URL imageUrl = null;
+        Uri builtUri = Uri.parse(API_BASE_IMAGE_URL + "/" + API_IMAGE_SIZE + imagePath);
+        try {
+            imageUrl = new URL(builtUri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Unable to parse the built discover URL, message: " + e.getMessage());
+        }
+        Log.d(TAG, "Built the image URL: " + imageUrl);
+        return imageUrl;
     }
 }
