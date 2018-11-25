@@ -1,6 +1,10 @@
 Popular Movies
 ==============
 
+API Key
+-------
+The API Key should be placed at **app\src\main\res\values\configuration.xml** in the `movie_db_api_key` property.
+
 Stage 1
 -------
 Your app will:
