@@ -28,6 +28,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
+    private static final int NUMBER_OF_COLUMNS = 2;
+
     private RecyclerView mMoviesRecyclerView;
     private MovieAdapter mMovieAdapter;
 
@@ -48,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
         // Optimisation due to the API only returning a set number at this stage.
         mMoviesRecyclerView.setHasFixedSize(true);
         // Create a new LayoutManager for the movies.
-        LinearLayoutManager layoutManager = new GridLayoutManager(this, 2);
+        LinearLayoutManager layoutManager = new GridLayoutManager(this, NUMBER_OF_COLUMNS);
         // Create a new MovieAdapter for the movies.
         mMovieAdapter = new MovieAdapter(this);
         // Set the LayoutManager and Adapter for the RecyclerView.
