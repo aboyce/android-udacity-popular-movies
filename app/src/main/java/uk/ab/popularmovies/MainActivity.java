@@ -9,6 +9,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -19,6 +20,7 @@ import java.net.URL;
 import java.util.List;
 
 import uk.ab.popularmovies.entities.Movie;
+import uk.ab.popularmovies.entities.MovieSort;
 import uk.ab.popularmovies.preferences.TMDbPreferences;
 import uk.ab.popularmovies.utilities.MovieUtility;
 import uk.ab.popularmovies.utilities.NetworkUtility;
@@ -29,6 +31,9 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private static final int NUMBER_OF_COLUMNS = 2;
+
+    // Default to sorting by popularity, doesn't really matter.
+    private MovieSort movieSortOrder = MovieSort.POPULARITY_DESCENDING;
 
     private RecyclerView mMoviesRecyclerView;
     private MovieAdapter mMovieAdapter;
@@ -88,6 +93,41 @@ public class MainActivity extends AppCompatActivity {
         mMoviesRecyclerView.setVisibility(View.INVISIBLE);
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int menuId = item.getItemId();
+        Log.i(TAG, "The menu item " + menuId + " was clicked.");
+        switch (menuId) {
+            case R.id.main_refresh:
+                Log.i(TAG, "The refresh menu item was clicked.");
+                loadMovies();
+                return true;
+            case R.id.main_sort_popularity_desc:
+                Log.i(TAG, "The sort by popularity descending menu item was clicked.");
+                movieSortOrder = MovieSort.POPULARITY_DESCENDING;
+                loadMovies();
+                return true;
+            case R.id.main_sort_popularity_asc:
+                Log.i(TAG, "The sort by popularity ascending menu item was clicked.");
+                movieSortOrder = MovieSort.POPULARITY_ASCENDING;
+                loadMovies();
+                return true;
+            case R.id.main_sort_rating_desc:
+                Log.i(TAG, "The sort by rating descending menu item was clicked.");
+                movieSortOrder = MovieSort.RATED_DESCENDING;
+                loadMovies();
+                return true;
+            case R.id.main_sort_rating_asc:
+                Log.i(TAG, "The sort by rating ascending menu item was clicked.");
+                movieSortOrder = MovieSort.RATED_ASCENDING;
+                loadMovies();
+                return true;
+            default:
+                Log.w(TAG, "There was no match for the clicked menu item " + menuId + ".");
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
     public class FetchDiscoverMoviesTask extends AsyncTask<Void, Integer, List<Movie>> {
 
         private final String TAG = FetchDiscoverMoviesTask.class.getSimpleName();
@@ -112,7 +152,7 @@ public class MainActivity extends AppCompatActivity {
                 // Get the generated request URL.
                 // TODO: Swap this overload out for one that takes a sorting order.
                 Log.d(TAG, "Will attempt to get the movie request URL.");
-                URL moviesRequestUrl = TMDbPreferences.getDiscoverURL(weakActivity.get());
+                URL moviesRequestUrl = TMDbPreferences.getDiscoverURL(weakActivity.get(), movieSortOrder);
                 publishProgress(10);
                 Log.d(TAG, "Retrieved the URL for the movie request.");
 

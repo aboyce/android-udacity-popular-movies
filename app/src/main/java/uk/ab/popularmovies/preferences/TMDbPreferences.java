@@ -23,7 +23,7 @@ public class TMDbPreferences {
     private static final String API_DISCOVER = "discover/movie";
 
     private static final String API_SORT_BY = "sort_by";
-    private static final MovieSort API_SORT_BY_DEFAULT = MovieSort.POPULARITY_ASCENDING;
+    private static final MovieSort API_SORT_BY_DEFAULT = MovieSort.POPULARITY_DESCENDING;
 
     private static final String API_LANGUAGE = "language";
     private static final String API_LANGUAGE_DEFAULT = "en-GB";

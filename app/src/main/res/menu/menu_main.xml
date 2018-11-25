@@ -1,8 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
         android:id="@+id/main_refresh"
-        android:title="Refresh"/>
-
+        android:title="@string/app_refresh"
+        app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/main_sort_popularity_desc"
+        android:title="@string/app_sort_popularity_descending"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/main_sort_popularity_asc"
+        android:title="@string/app_sort_popularity_ascending"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/main_sort_rating_desc"
+        android:title="@string/app_sort_rating_descending"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/main_sort_rating_asc"
+        android:title="@string/app_sort_rating_ascending"
+        app:showAsAction="never"/>
 </menu>

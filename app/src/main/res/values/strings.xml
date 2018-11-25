@@ -1,5 +1,10 @@
 <resources>
     <string name="app_name">Popular Movies</string>
+    <string name="app_refresh">Refresh</string>
+    <string name="app_sort_popularity_descending">Sort by Popularity (desc)</string>
+    <string name="app_sort_popularity_ascending">Sort by Popularity (asc)</string>
+    <string name="app_sort_rating_descending">Sort by Rating (desc)</string>
+    <string name="app_sort_rating_ascending">Sort by Rating (asc)</string>
 
     <!-- MOVIE -->
     <string name="movie_release_date">Released: </string>
