@@ -9,8 +9,8 @@
     <ImageView
         android:id="@+id/iv_movie_item_image"
         android:layout_gravity="center"
-        android:paddingTop="5dp"
-        android:paddingBottom="5dp"
+        android:paddingStart="5dp"
+        android:paddingEnd="5dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 

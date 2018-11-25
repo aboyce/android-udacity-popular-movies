@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">Popular Movies</string>
 
+    <!-- MOVIE -->
     <string name="movie_release_date">Released: </string>
+    <string name="movie_release_date_default">N/A</string>
+    <string name="movie_plot_synopsis">Description</string>
 </resources>

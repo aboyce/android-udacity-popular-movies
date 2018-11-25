@@ -2,6 +2,7 @@ package uk.ab.popularmovies.view;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -23,6 +24,8 @@ import uk.ab.popularmovies.preferences.TMDbPreferences;
 public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHolder> {
 
     private static final String TAG = MovieAdapter.class.getSimpleName();
+
+    private static final int MOVIE_IMAGE_SPACE = 10;
 
     private List<Movie> mMovies;
 
@@ -70,8 +73,15 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
 
         String imagePath = TMDbPreferences.getImageURL(movie.getAnyImagePath()).toString();
 
+        int screenWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
+        // The width of the image should be half the screen witch, minus any extra for a gap.
+        int imageWidth = (screenWidth / 2) - MOVIE_IMAGE_SPACE;
+        // The images are all provided (poster images) at 500px*750px, keep this ratio (1*1.5).
+        int imageHeight = (int)(imageWidth * 1.5);
+
         Picasso.with(context)
                 .load(imagePath)
+                .resize(imageWidth, imageHeight)
                 .into(movieViewHolder.mMovieImageImageView);
     }
 
