@@ -22,7 +22,13 @@ public class Movie implements Parcelable {
         this.backdropImagePath = parcel.readString();
         this.plotSynopsis = parcel.readString();
         this.userRating = parcel.readDouble();
-        this.releaseDate = LocalDate.ofEpochDay(parcel.readLong());
+        // This could be null, test before converting.
+        String epochDay = parcel.readString();
+        if (epochDay == null) {
+            this.releaseDate = null;
+        } else {
+            this.releaseDate = LocalDate.ofEpochDay(Long.parseLong(epochDay));
+        }
     }
 
     public Movie(Integer id, String title, String imagePath, String backdropImagePath, String plotSynopsis, Double userRating, LocalDate releaseDate) {
@@ -109,7 +115,12 @@ public class Movie implements Parcelable {
         parcel.writeString(this.backdropImagePath);
         parcel.writeString(this.plotSynopsis);
         parcel.writeDouble(this.userRating);
-        parcel.writeLong(this.releaseDate.toEpochDay());
+        // Use a string to transmit the date so that it can be null.
+        if (this.getReleaseDate() == null) {
+            parcel.writeString(null);
+        } else {
+            parcel.writeString(Long.toString(this.releaseDate.toEpochDay()));
+        }
     }
 
     @Override

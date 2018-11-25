@@ -40,7 +40,7 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
 
         MovieViewHolder(View view) {
             super(view);
-            mMovieImageImageView = view.findViewById(R.id.movie_item_image);
+            mMovieImageImageView = view.findViewById(R.id.iv_movie_item_image);
         }
     }
 

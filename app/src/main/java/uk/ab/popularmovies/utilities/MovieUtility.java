@@ -129,7 +129,16 @@ public class MovieUtility {
             backdropImagePath = json.isNull(JSON_MOVIE_BACKDROP_IMAGE_PATH) ? null : json.getString(JSON_MOVIE_BACKDROP_IMAGE_PATH);
             plotSynopsis = json.getString(JSON_MOVIE_PLOT_SYNOPSIS);
             userRating = json.getDouble(JSON_MOVIE_USER_RATING);
-            releaseDate = json.getString(JSON_MOVIE_RELEASE_DATE);
+            releaseDate = json.isNull(JSON_MOVIE_RELEASE_DATE) ? null : json.getString(JSON_MOVIE_RELEASE_DATE);
+
+            // The release date is not always provided, but instead is just an empty string.
+            if (releaseDate != null) {
+                Log.d(TAG, "The release date is not null, may still not be a valid date.");
+                if (releaseDate.equals("")) {
+                    releaseDate = null;
+                    Log.d(TAG, "The release date did not have a value, converting to null");
+                }
+            }
         } catch (JSONException e) {
             e.printStackTrace();
             Log.e(TAG, "Could not convert the JSON into a Movie, message: " + e.getMessage());

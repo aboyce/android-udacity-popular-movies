@@ -7,7 +7,12 @@ import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.squareup.picasso.Picasso;
+
+import java.net.URL;
+
 import uk.ab.popularmovies.entities.Movie;
+import uk.ab.popularmovies.preferences.TMDbPreferences;
 
 public class MovieActivity extends AppCompatActivity {
 
@@ -27,10 +32,10 @@ public class MovieActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie);
 
-        mMovieTitleTextView = findViewById(R.id.movie_title_tv);
-        mMovieImageImageView = findViewById(R.id.movie_image_iv);
-        mMoviePlotSynopsisTextView = findViewById(R.id.movie_plot_synopsis_tv);
-        mMovieReleaseDateTextView = findViewById(R.id.movie_release_date_tv);
+        mMovieTitleTextView = findViewById(R.id.tv_movie_title);
+        mMovieImageImageView = findViewById(R.id.iv_movie_image);
+        mMoviePlotSynopsisTextView = findViewById(R.id.tv_movie_plot_synopsis);
+        mMovieReleaseDateTextView = findViewById(R.id.tv_movie_release_date);
         Log.d(TAG, "Located all of the view components.");
 
         Intent callingIntent = getIntent();
@@ -52,8 +57,24 @@ public class MovieActivity extends AppCompatActivity {
     }
 
     private void updateUserInterface() {
+        URL imageUrl = TMDbPreferences.getImageURL(movie.getAnyImagePath());
+        Log.d(TAG, "The movie image path is '" + imageUrl.toString() + "'.");
+
+        // Due to early screening, there will always be an image available to download.
+        Picasso.with(getApplicationContext())
+                .load(imageUrl.toString())
+                .into(mMovieImageImageView);
+
         mMovieTitleTextView.setText(movie.getTitle());
-        //mMoviePlotSynopsisTextView.setText(movie.getPlotSynopsis());
-        //mMovieReleaseDateTextView.setText(movie.getReleaseDate().getYear());
+        mMoviePlotSynopsisTextView.setText(movie.getPlotSynopsis());
+
+        // Only update the release date if it is present, leave it to the default value if not.
+        if (movie.getReleaseDate() == null) {
+            Log.w(TAG, "There was not release date available for '" + movie.getTitle() + "'.");
+        } else {
+            String releaseDate = Integer.toString(movie.getReleaseDate().getYear());
+            Log.d(TAG, "A release date '" + releaseDate + "' is available for '" + movie.getTitle() + "'.");
+            mMovieReleaseDateTextView.setText(releaseDate);
+        }
     }
 }
