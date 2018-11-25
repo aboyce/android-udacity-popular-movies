@@ -204,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
             mMoviesLoadingProgressBar.setVisibility(View.INVISIBLE);
             // Check the the Movies are present before use.
             if (movies == null) {
-                showError("Could not display the movies, none were returned.");
+                showError(getString(R.string.movie_load_error));
                 return;
             }
             // The movies are present, show them on the UI.

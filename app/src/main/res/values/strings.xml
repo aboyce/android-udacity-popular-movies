@@ -12,4 +12,7 @@
     <string name="movie_rating">Rating: </string>
     <string name="movie_rating_default">No Rating</string>
     <string name="movie_plot_synopsis">Description</string>
+
+    <!-- ERROR -->
+    <string name="movie_load_error">Could not display the movies, none were returned. Please check your internet connection.</string>
 </resources>
