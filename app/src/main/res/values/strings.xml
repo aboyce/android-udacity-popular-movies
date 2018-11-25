@@ -9,5 +9,7 @@
     <!-- MOVIE -->
     <string name="movie_release_date">Released: </string>
     <string name="movie_release_date_default">N/A</string>
+    <string name="movie_rating">Rating: </string>
+    <string name="movie_rating_default">No Rating</string>
     <string name="movie_plot_synopsis">Description</string>
 </resources>

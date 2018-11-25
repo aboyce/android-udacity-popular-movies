@@ -49,6 +49,32 @@
                 android:layout_height="wrap_content"
                 android:text="@string/movie_release_date_default"/>
         </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/tv_movie_rating_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="5dp"
+                android:layout_marginTop="5dp"
+                android:layout_marginBottom="5dp"
+                android:text="@string/movie_rating"
+                android:textStyle="bold"/>
+            <TextView
+                android:id="@+id/tv_movie_rating"
+                android:layout_marginStart="5dp"
+                android:layout_marginEnd="5dp"
+                android:layout_marginTop="5dp"
+                android:layout_marginBottom="5dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/movie_rating_default"/>
+        </LinearLayout>
         <TextView
             android:id="@+id/tv_movie_plot_synopsis_label"
             android:layout_width="wrap_content"

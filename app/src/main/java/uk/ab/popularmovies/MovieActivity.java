@@ -24,6 +24,7 @@ public class MovieActivity extends AppCompatActivity {
     private ImageView mMovieImageImageView;
     private TextView mMoviePlotSynopsisTextView;
     private TextView mMovieReleaseDateTextView;
+    private TextView mMovieRatingTextView;
 
     private Movie movie;
 
@@ -36,6 +37,7 @@ public class MovieActivity extends AppCompatActivity {
         mMovieImageImageView = findViewById(R.id.iv_movie_image);
         mMoviePlotSynopsisTextView = findViewById(R.id.tv_movie_plot_synopsis);
         mMovieReleaseDateTextView = findViewById(R.id.tv_movie_release_date);
+        mMovieRatingTextView = findViewById(R.id.tv_movie_rating);
         Log.d(TAG, "Located all of the view components.");
 
         Intent callingIntent = getIntent();
@@ -67,6 +69,12 @@ public class MovieActivity extends AppCompatActivity {
 
         mMovieTitleTextView.setText(movie.getTitle());
         mMoviePlotSynopsisTextView.setText(movie.getPlotSynopsis());
+
+        // Bit of a raw check, but if it will display '0.0' let it use the default value instead.
+        if (!movie.getUserRating().toString().equals("0.0")) {
+            String rating = Double.toString(movie.getUserRating());
+            mMovieRatingTextView.setText(rating);
+        }
 
         // Only update the release date if it is present, leave it to the default value if not.
         if (movie.getReleaseDate() == null) {
