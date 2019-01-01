@@ -32,7 +32,7 @@ public class MovieUtility {
         List<Movie> movies = new ArrayList<>();
 
         if (json == null || json.equals("")) {
-            String message = "The JSON provided is null or empty, cannot be parsed into Movies.";
+            String message = "The JSON provided is null or empty, cannot be parsed into movies.";
             Log.e(TAG, message);
             throw new IllegalArgumentException(message);
         }
@@ -41,27 +41,27 @@ public class MovieUtility {
         JSONObject responseJson;
 
         try {
-            // Convert the full response object into a JSON Object.
+            // Convert the full response object into a JSON object.
             responseJson = new JSONObject(json);
 
-            // Extract the array of JSON Objects into a JSON Array.
+            // Extract the array of JSON objects into a JSON Array.
             JSONArray moviesJson = responseJson.getJSONArray(JSON_MOVIE_RESULTS);
             if (moviesJson != null) {
-                // Go over each JSON Object that represents a JSON Movie.
+                // Go over each JSON object that represents a JSON movie.
                 for (int i = 0; i < moviesJson.length(); i++) {
                     JSONObject movieJson = moviesJson.getJSONObject(i);
                     if (movieJson == null) {
-                        Log.w(TAG, "Could not get a movie from the JSON Array of Movies. ");
+                        Log.w(TAG, "Could not get a movie from the JSON Array of movies.");
                         continue;
                     }
-                    // Convert the current JSON Object into a Movie Object.
+                    // Convert the current JSON object into a movie object.
                     Movie currentMovie = getMovieFromJson(movieJson);
                     if (currentMovie == null) {
-                        Log.w(TAG, "Could not get a movie from the ");
+                        Log.w(TAG, "Could not get a movie from the JSON object at index " + i + ".");
                         continue;
                     }
-                    Log.d(TAG, "Added movie " + currentMovie.getId() + " to the movies array.");
-                    // Add the newly parsed Movie to the List.
+                    Log.d(TAG, "Added movie " + currentMovie.getId() + " to the array.");
+                    // Add the newly parsed movie to the List.
                     movies.add(currentMovie);
                 }
             }
@@ -71,29 +71,20 @@ public class MovieUtility {
             return null;
         }
 
-
         return movies;
     }
 
     private static Movie getMovieFromJson(JSONObject json) {
 
         if (json == null) {
-            String message = "The JSON provided is null, cannot be parsed into a Movie.";
+            String message = "The JSON provided is null, cannot be parsed into a movie.";
             Log.e(TAG, message);
             throw new IllegalArgumentException(message);
         }
 
-        Integer id = null;
-        String title = null;
-        String imagePath = null;
-        String backdropImagePath = null;
-        String plotSynopsis = null;
-        Double userRating = null;
-        String releaseDate = null;
-
         // Check that all the required properties are present;
         if (!json.has(JSON_MOVIE_ID)) {
-            Log.w(TAG, "The JSON object does not contain a value for the Id.");
+            Log.w(TAG, "The JSON object does not contain a value for the id.");
             return null;
         }
         if (!json.has(JSON_MOVIE_TITLE)) {
@@ -121,6 +112,14 @@ public class MovieUtility {
             return null;
         }
 
+        Integer id = null;
+        String title = null;
+        String imagePath = null;
+        String backdropImagePath = null;
+        String plotSynopsis = null;
+        Double userRating = null;
+        String releaseDate = null;
+
         // Extract all the required properties from JSON to Java.
         try {
             id = json.getInt(JSON_MOVIE_ID);
@@ -141,7 +140,7 @@ public class MovieUtility {
             }
         } catch (JSONException e) {
             e.printStackTrace();
-            Log.e(TAG, "Could not convert the JSON into a Movie, message: " + e.getMessage());
+            Log.e(TAG, "Could not convert the JSON into a movie, message: " + e.getMessage());
         }
 
         Log.v(TAG, "Movie id: '" + id + "'.");

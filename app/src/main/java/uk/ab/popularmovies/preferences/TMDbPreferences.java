@@ -8,7 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import uk.ab.popularmovies.R;
-import uk.ab.popularmovies.entities.MovieSort;
+import uk.ab.popularmovies.entities.enums.MovieSort;
 
 public class TMDbPreferences {
 
@@ -20,7 +20,9 @@ public class TMDbPreferences {
     private static final String API_IMAGE_SIZE = "w500";
     private static final String API_VERSION = "3";
     private static final String API_KEY = "api_key";
-    private static final String API_DISCOVER = "discover/movie";
+    private static final String API_DISCOVER = "discover";
+    private static final String API_MOVIE = "movie";
+    private static final String API_TRAILER = "videos";
 
     private static final String API_SORT_BY = "sort_by";
     private static final MovieSort API_SORT_BY_DEFAULT = MovieSort.POPULARITY_DESCENDING;
@@ -63,7 +65,7 @@ public class TMDbPreferences {
         URL discoverUrl = null;
         String apiKey = getApiKey(context);
 
-        Uri builtUri = Uri.parse(API_BASE_URL + "/" + API_VERSION + "/" + API_DISCOVER)
+        Uri builtUri = Uri.parse(API_BASE_URL + "/" + API_VERSION + "/" + API_DISCOVER + "/" + API_MOVIE)
                 .buildUpon()
                 .appendQueryParameter(API_KEY, apiKey)
                 .appendQueryParameter(API_LANGUAGE, API_LANGUAGE_DEFAULT)
@@ -83,6 +85,31 @@ public class TMDbPreferences {
         Log.d(TAG, "Built the discover URL: " + cleanUrl);
 
         return discoverUrl;
+    }
+
+    public static URL getMovieTrailersURL(Context context, Integer movieId) {
+
+        URL trailerUrl = null;
+        String apiKey = getApiKey(context);
+
+        Uri builtUri = Uri.parse(API_BASE_URL + "/" + API_VERSION + "/" + API_MOVIE + "/" + movieId + "/" + API_TRAILER)
+                .buildUpon()
+                .appendQueryParameter(API_KEY, apiKey)
+                .appendQueryParameter(API_LANGUAGE, API_LANGUAGE_DEFAULT)
+                .build();
+
+        try {
+            trailerUrl = new URL(builtUri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Unable to parse the built trailer URL, message: " + e.getMessage());
+        }
+
+        // Remove the API for logging purposes.
+        String cleanUrl = builtUri.toString().replace(apiKey, "****");
+        Log.d(TAG, "Built the trailer URL: " + cleanUrl);
+
+        return trailerUrl;
     }
 
     public static URL getImageURL(String imagePath) {

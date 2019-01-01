@@ -1,5 +1,5 @@
 
-package uk.ab.popularmovies.entities;
+package uk.ab.popularmovies.entities.enums;
 
 public enum MovieSort {
 

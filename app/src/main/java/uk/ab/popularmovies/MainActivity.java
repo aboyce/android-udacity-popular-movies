@@ -20,7 +20,7 @@ import java.net.URL;
 import java.util.List;
 
 import uk.ab.popularmovies.entities.Movie;
-import uk.ab.popularmovies.entities.MovieSort;
+import uk.ab.popularmovies.entities.enums.MovieSort;
 import uk.ab.popularmovies.preferences.TMDbPreferences;
 import uk.ab.popularmovies.utilities.MovieUtility;
 import uk.ab.popularmovies.utilities.NetworkUtility;
@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
         // Optimisation due to the API only returning a set number at this stage.
         mMoviesRecyclerView.setHasFixedSize(true);
         // Create a new LayoutManager for the movies.
-        LinearLayoutManager layoutManager = new GridLayoutManager(this, NUMBER_OF_COLUMNS);
+        GridLayoutManager layoutManager = new GridLayoutManager(this, NUMBER_OF_COLUMNS);
         // Create a new MovieAdapter for the movies.
         mMovieAdapter = new MovieAdapter(this);
         // Set the LayoutManager and Adapter for the RecyclerView.
@@ -134,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
 
         private final WeakReference<Activity> weakActivity;
 
-        public FetchDiscoverMoviesTask(Activity activity) {
+        FetchDiscoverMoviesTask(Activity activity) {
             this.weakActivity = new WeakReference<>(activity);
         }
 
@@ -150,7 +150,6 @@ public class MainActivity extends AppCompatActivity {
 
             try {
                 // Get the generated request URL.
-                // TODO: Swap this overload out for one that takes a sorting order.
                 Log.d(TAG, "Will attempt to get the movie request URL.");
                 URL moviesRequestUrl = TMDbPreferences.getDiscoverURL(weakActivity.get(), movieSortOrder);
                 publishProgress(10);
