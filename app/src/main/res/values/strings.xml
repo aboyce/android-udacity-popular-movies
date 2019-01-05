@@ -15,7 +15,8 @@
     <string name="movie_poster_content_description">The primary movie poster</string>
     <string name="movie_trailers">Trailers</string>
     <string name="movie_reviews">Reviews</string>
-    <string name="movie_review_content_description">A symbol representing a play/collection icon</string>
+    <string name="movie_review_content_description">An icon to represent play/collection</string>
+    <string name="movie_favourite_content_description">A symbol to represent a star</string>
 
     <!-- ERROR -->
     <string name="movie_load_error">Could not display the movies, none were returned. Please check your internet connection.</string>

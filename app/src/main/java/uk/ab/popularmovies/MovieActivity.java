@@ -22,6 +22,7 @@ import java.util.List;
 import uk.ab.popularmovies.entities.Movie;
 import uk.ab.popularmovies.entities.MovieReview;
 import uk.ab.popularmovies.entities.MovieTrailer;
+import uk.ab.popularmovies.entities.database.ApplicationDatabase;
 import uk.ab.popularmovies.preferences.TMDbPreferences;
 import uk.ab.popularmovies.utilities.MovieReviewUtility;
 import uk.ab.popularmovies.utilities.MovieTrailerUtility;
@@ -40,6 +41,7 @@ public class MovieActivity extends AppCompatActivity {
     private TextView mMoviePlotSynopsisTextView;
     private TextView mMovieReleaseDateTextView;
     private TextView mMovieRatingTextView;
+    private ImageView mMovieFavouriteImageView;
 
     private TextView mMovieTrailerLabel;
     private RecyclerView mMovieTrailerRecyclerView;
@@ -50,6 +52,9 @@ public class MovieActivity extends AppCompatActivity {
     private MovieReviewAdapter mMovieReviewAdapter;
 
     private Movie movie;
+    private boolean isMovieAFavourite = false;
+
+    private ApplicationDatabase database;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,11 +77,15 @@ public class MovieActivity extends AppCompatActivity {
         movie = callingIntent.getParcelableExtra(MOVIE_INTENT);
         Log.d(TAG, "Extracted the movie '" + movie.getTitle() + "' from the intent extra.");
 
+        // Initialise/populate the database instance.
+        database = ApplicationDatabase.getInstance(getApplicationContext());
+
         mMovieTitleTextView = findViewById(R.id.tv_movie_title);
         mMovieImageImageView = findViewById(R.id.iv_movie_image);
         mMoviePlotSynopsisTextView = findViewById(R.id.tv_movie_plot_synopsis);
         mMovieReleaseDateTextView = findViewById(R.id.tv_movie_release_date);
         mMovieRatingTextView = findViewById(R.id.tv_movie_rating);
+        mMovieFavouriteImageView = findViewById(R.id.iv_movie_favourite);
         mMovieReviewLabel = findViewById(R.id.tv_movie_reviews_label);
         mMovieTrailerLabel = findViewById(R.id.tv_movie_trailers_label);
         Log.d(TAG, "Located all of the view components.");
@@ -98,6 +107,7 @@ public class MovieActivity extends AppCompatActivity {
 
         updateUserInterface();
         loadMovieExtras();
+        configureClickEvents();
     }
 
     private void updateUserInterface() {
@@ -134,6 +144,41 @@ public class MovieActivity extends AppCompatActivity {
 
         Log.d(TAG, "Will invoke a new FetchReviewsTasks to load the movie reviews.");
         new FetchReviewsTasks(this).execute(movie.getId());
+
+        // Check to see if the movie is a favourite or not (i.e does it exist in the database).
+        if (database.movieDao().getMovieFromId(movie.getId()) != null) {
+            // Movie exists in the database so it has been marked as a favourite.
+            mMovieFavouriteImageView.setImageResource(R.drawable.ic_star);
+            isMovieAFavourite = true;
+        } else {
+            // Movie does not exist in the database, so has not been marked as a favourite.
+            mMovieFavouriteImageView.setImageResource(R.drawable.ic_star_empty);
+            isMovieAFavourite = false;
+        }
+    }
+
+    private void configureClickEvents() {
+        mMovieFavouriteImageView.setOnClickListener(view -> {
+            Log.d(TAG, "Favourite icon for " + movie.getId() + " has been clicked.");
+
+            if (isMovieAFavourite) {
+                // The movie is a favourite, this means that it exists in the database.
+                // The icon has been clicked, this means that the movie should be removed from the database.
+                Log.d(TAG, "Movie " + movie.getId() + " is a favourite, it will be removed.");
+                database.movieDao().deleteMovie(movie);
+                mMovieFavouriteImageView.setImageResource(R.drawable.ic_star_empty);
+                Log.d(TAG, "Movie " + movie.getId() + " has been removed.");
+            } else {
+                // The movie is not a favourite, this means that it does not (yet) exist in the database.
+                // The icon has been clicked, this means that the movie should be added to the database.
+                Log.d(TAG, "Movie " + movie.getId() + " is not a favourite, it will be added.");
+                database.movieDao().insertMovie(movie);
+                mMovieFavouriteImageView.setImageResource(R.drawable.ic_star);
+                Log.d(TAG, "Movie " + movie.getId() + " has been added.");
+            }
+            // Reset the favourite bool, for next time.
+            isMovieAFavourite = !isMovieAFavourite;
+        });
     }
 
     public class FetchTrailersTasks extends AsyncTask<Integer, Integer, List<MovieTrailer>> {

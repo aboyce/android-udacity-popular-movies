@@ -1,20 +1,40 @@
 package uk.ab.popularmovies.entities;
 
+import android.arch.persistence.room.ColumnInfo;
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Ignore;
+import android.arch.persistence.room.PrimaryKey;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import java.time.LocalDate;
 
+@Entity(tableName = "movie")
 public class Movie implements Parcelable {
 
+    @PrimaryKey()
+    @ColumnInfo(name = "id")
     private Integer id;
+
+    @ColumnInfo(name = "title")
     private String title;
+
+    @ColumnInfo(name = "image_path")
     private String imagePath;
+
+    @ColumnInfo(name = "backdrop_image_path")
     private String backdropImagePath;
+
+    @ColumnInfo(name = "plot_synopsis")
     private String plotSynopsis;
+
+    @ColumnInfo(name = "user_rating")
     private Double userRating;
+
+    @ColumnInfo(name = "release_date")
     private LocalDate releaseDate;
 
+    @Ignore
     public Movie(Parcel parcel) {
         this.id = parcel.readInt();
         this.title = parcel.readString();
