@@ -1,5 +1,6 @@
 package uk.ab.popularmovies.preferences;
 
+import android.app.Activity;
 import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
@@ -23,6 +24,7 @@ public class TMDbPreferences {
     private static final String API_DISCOVER = "discover";
     private static final String API_MOVIE = "movie";
     private static final String API_TRAILER = "videos";
+    private static final String API_REVIEW = "reviews";
 
     private static final String API_SORT_BY = "sort_by";
     private static final MovieSort API_SORT_BY_DEFAULT = MovieSort.POPULARITY_DESCENDING;
@@ -110,6 +112,31 @@ public class TMDbPreferences {
         Log.d(TAG, "Built the trailer URL: " + cleanUrl);
 
         return trailerUrl;
+    }
+
+    public static URL getMovieReviewsURL(Context context, Integer movieId) {
+
+        URL reviewUrl = null;
+        String apiKey = getApiKey(context);
+
+        Uri builtUri = Uri.parse(API_BASE_URL + "/" + API_VERSION + "/" + API_MOVIE + "/" + movieId + "/" + API_REVIEW)
+                .buildUpon()
+                .appendQueryParameter(API_KEY, apiKey)
+                .appendQueryParameter(API_LANGUAGE, API_LANGUAGE_DEFAULT)
+                .build();
+
+        try {
+            reviewUrl = new URL(builtUri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Unable to parse the built review URL, message: " + e.getMessage());
+        }
+
+        // Remove the API for logging purposes.
+        String cleanUrl = builtUri.toString().replace(apiKey, "****");
+        Log.d(TAG, "Built the review URL: " + cleanUrl);
+
+        return reviewUrl;
     }
 
     public static URL getImageURL(String imagePath) {

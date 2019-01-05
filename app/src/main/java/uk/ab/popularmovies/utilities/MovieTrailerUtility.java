@@ -69,7 +69,7 @@ public class MovieTrailerUtility {
                         Log.w(TAG, "Could not get a movie trailer from the JSON Array of movie trailers. ");
                         continue;
                     }
-                    // Convert the current JSON object into a movie Trailer object.
+                    // Convert the current JSON object into a movie trailer object.
                     MovieTrailer currentMovieTrailer = getMovieTrailerFromJson(movieTrailerJson);
                     if (currentMovieTrailer == null) {
                         Log.w(TAG, "Could not get a movie trailer from the JSON object at index " + i + ".");
@@ -140,7 +140,7 @@ public class MovieTrailerUtility {
             type = json.getString(JSON_TRAILER_TYPE);
         } catch (JSONException e) {
             e.printStackTrace();
-            Log.e(TAG, "Could not convert the JSON into a movie, message: " + e.getMessage());
+            Log.e(TAG, "Could not convert the JSON into a movie trailer, message: " + e.getMessage());
         }
 
         Log.v(TAG, "Movie trailer id: '" + id + "'.");
