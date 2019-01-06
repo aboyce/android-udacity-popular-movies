@@ -1,6 +1,5 @@
 package uk.ab.popularmovies.preferences;
 
-import android.app.Activity;
 import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
