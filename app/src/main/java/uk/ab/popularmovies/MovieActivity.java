@@ -145,14 +145,15 @@ public class MovieActivity extends AppCompatActivity {
     }
 
     private void loadMovieExtras() {
-
-        // If there is no connection to the internet, there is no point trying to load from the API.
         if (NetworkUtility.isConnectedToInternet(this)) {
             Log.d(TAG, "Will invoke a new FetchTrailersTasks to load the movie trailers.");
             new FetchTrailersTasks(this).execute(movie.getId());
-
             Log.d(TAG, "Will invoke a new FetchReviewsTasks to load the movie reviews.");
             new FetchReviewsTasks(this).execute(movie.getId());
+        } else {
+            // Hide the recycler views if there is going to be nothing to show.
+            mMovieTrailerRecyclerView.setVisibility(View.GONE);
+            mMovieReviewRecyclerView.setVisibility(View.GONE);
         }
 
         final LiveData<Movie> savedMovie = database.movieDao().getMovieFromId(movie.getId());
