@@ -6,7 +6,9 @@ public enum MovieSort {
     POPULARITY_DESCENDING("popularity.desc"),
     POPULARITY_ASCENDING("popularity.asc"),
     RATED_DESCENDING("vote_average.desc"),
-    RATED_ASCENDING("vote_average.asc");
+    RATED_ASCENDING("vote_average.asc"),
+
+    FAVOURITES("favourites");
 
     private final String apiValue;
 

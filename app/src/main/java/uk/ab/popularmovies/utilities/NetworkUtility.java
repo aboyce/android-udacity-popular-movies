@@ -1,5 +1,8 @@
 package uk.ab.popularmovies.utilities;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.util.Log;
 
 import java.io.IOException;
@@ -37,5 +40,12 @@ public class NetworkUtility {
         } finally {
             connection.disconnect();
         }
+    }
+
+    public static boolean isConnectedToInternet(Context context) {
+        ConnectivityManager manager = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInformation = manager.getActiveNetworkInfo();
+        // Check the network status/information, return the status.
+        return networkInformation != null && networkInformation.isConnected();
     }
 }

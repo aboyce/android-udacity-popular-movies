@@ -1,11 +1,17 @@
 package uk.ab.popularmovies;
 
 import android.app.Activity;
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.ViewModelProviders;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
@@ -13,6 +19,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -20,26 +27,35 @@ import java.net.URL;
 import java.util.List;
 
 import uk.ab.popularmovies.entities.Movie;
+import uk.ab.popularmovies.entities.database.ApplicationDatabase;
 import uk.ab.popularmovies.entities.enums.MovieSort;
 import uk.ab.popularmovies.preferences.TMDbPreferences;
 import uk.ab.popularmovies.utilities.MovieUtility;
 import uk.ab.popularmovies.utilities.NetworkUtility;
 import uk.ab.popularmovies.view.MovieAdapter;
+import uk.ab.popularmovies.viewmodels.MainViewModel;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private static final int NUMBER_OF_COLUMNS = 2;
+    private static final MovieSort DEFAULT_MOVIE_SORT = MovieSort.POPULARITY_DESCENDING;
 
-    // Default to sorting by popularity, doesn't really matter.
-    private MovieSort movieSortOrder = MovieSort.POPULARITY_DESCENDING;
+    private MovieSort movieSortOrder = DEFAULT_MOVIE_SORT;
 
     private RecyclerView mMoviesRecyclerView;
     private MovieAdapter mMovieAdapter;
 
     private TextView mErrorMessageTextView;
     private ProgressBar mMoviesLoadingProgressBar;
+
+    private NetworkBroadcastReceiver mNetworkReceiver;
+    private IntentFilter mNetworkIntentFilter;
+
+    private ApplicationDatabase mDatabase;
+
+    private Menu mMenu;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,19 +78,70 @@ public class MainActivity extends AppCompatActivity {
         mMoviesRecyclerView.setLayoutManager(layoutManager);
         mMoviesRecyclerView.setAdapter(mMovieAdapter);
 
-        loadMovies();
+        mNetworkReceiver = new NetworkBroadcastReceiver();
+        mNetworkIntentFilter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+
+        mDatabase = ApplicationDatabase.getInstance(getApplicationContext());
+
+        loadMovies(getApplicationContext());
+        setupViewModel();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Register for any network changes.
+        registerReceiver(mNetworkReceiver, mNetworkIntentFilter);
+        // The connection status may have changed since the application was last used.
+        displayMenuItems();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Unregister for any network changes.
+        unregisterReceiver(mNetworkReceiver);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        this.mMenu = menu;
+        // Ensure that the correct menu items are visible.
+        displayMenuItems();
         return true;
     }
 
-    private void loadMovies() {
-        Log.d(TAG, "Will invoke a new FetchDiscoverMoviesTask to load the Movies.");
-        // TODO: Replace this, rename this, and pass in the required data.
-        new FetchDiscoverMoviesTask(this).execute();
+    private void loadMovies(Context context) {
+
+        boolean isConnected = NetworkUtility.isConnectedToInternet(context);
+        boolean isFavourites = movieSortOrder.equals(MovieSort.FAVOURITES);
+
+        // If there is an internet connection, and something to load, get the movies from the API.
+        if (isConnected && !(isFavourites)) {
+            Log.d(TAG, "Will invoke a new FetchDiscoverMoviesTask to load the Movies.");
+            new FetchDiscoverMoviesTask(this).execute();
+            return;
+        }
+
+        // If there is no connection but we are loading movies, ensure it is on the favourites selection.
+        // There is no other option if the connection is down, other scenarios have already been handled.
+        movieSortOrder = MovieSort.FAVOURITES;
+
+        // Now we can load the movies in from the local database.
+        final LiveData<List<Movie>> favouriteMovies = mDatabase.movieDao().getAllMovies();
+        favouriteMovies.observe(this, movies -> {
+            Log.d(TAG, "Receiving database update of favourite movies, will display.");
+            showMovies(movies);
+        });
+    }
+
+    private void setupViewModel() {
+        MainViewModel viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
+        viewModel.getMovies().observe(this, movies -> {
+            Log.d(TAG, "The movies in the main view model has been updated.");
+            // If the application was primarily offline, this is where you would update the movie collection.
+        });
     }
 
     private void showMovies(List<Movie> movies) {
@@ -93,6 +160,29 @@ public class MainActivity extends AppCompatActivity {
         mMoviesRecyclerView.setVisibility(View.INVISIBLE);
     }
 
+    private void displayMenuItems() {
+        if (mMenu == null) {
+            Log.w(TAG, "Could not update the menu items as the menu was not available.");
+            return;
+        }
+
+        if (NetworkUtility.isConnectedToInternet(this)) {
+            Log.d(TAG, "Will update the menu items to have the online options.");
+            mMenu.findItem(R.id.main_sort_popularity_desc).setVisible(true);
+            mMenu.findItem(R.id.main_sort_popularity_asc).setVisible(true);
+            mMenu.findItem(R.id.main_sort_rating_desc).setVisible(true);
+            mMenu.findItem(R.id.main_sort_rating_asc).setVisible(true);
+        } else {
+            Log.d(TAG, "Will update the menu items to have only the offline options.");
+            mMenu.findItem(R.id.main_sort_popularity_desc).setVisible(false);
+            mMenu.findItem(R.id.main_sort_popularity_asc).setVisible(false);
+            mMenu.findItem(R.id.main_sort_rating_desc).setVisible(false);
+            mMenu.findItem(R.id.main_sort_rating_asc).setVisible(false);
+        }
+        // This is always shown.
+        mMenu.findItem(R.id.main_sort_favourites).setVisible(true);
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int menuId = item.getItemId();
@@ -100,31 +190,66 @@ public class MainActivity extends AppCompatActivity {
         switch (menuId) {
             case R.id.main_refresh:
                 Log.i(TAG, "The refresh menu item was clicked.");
-                loadMovies();
+                loadMovies(getApplicationContext());
                 return true;
             case R.id.main_sort_popularity_desc:
                 Log.i(TAG, "The sort by popularity descending menu item was clicked.");
                 movieSortOrder = MovieSort.POPULARITY_DESCENDING;
-                loadMovies();
+                loadMovies(getApplicationContext());
                 return true;
             case R.id.main_sort_popularity_asc:
                 Log.i(TAG, "The sort by popularity ascending menu item was clicked.");
                 movieSortOrder = MovieSort.POPULARITY_ASCENDING;
-                loadMovies();
+                loadMovies(getApplicationContext());
                 return true;
             case R.id.main_sort_rating_desc:
                 Log.i(TAG, "The sort by rating descending menu item was clicked.");
                 movieSortOrder = MovieSort.RATED_DESCENDING;
-                loadMovies();
+                loadMovies(getApplicationContext());
                 return true;
             case R.id.main_sort_rating_asc:
                 Log.i(TAG, "The sort by rating ascending menu item was clicked.");
                 movieSortOrder = MovieSort.RATED_ASCENDING;
-                loadMovies();
+                loadMovies(getApplicationContext());
+                return true;
+            case R.id.main_sort_favourites:
+                Log.i(TAG, "The sort by favourites menu item was clicked.");
+                movieSortOrder = MovieSort.FAVOURITES;
+                loadMovies(getApplicationContext());
                 return true;
             default:
                 Log.w(TAG, "There was no match for the clicked menu item " + menuId + ".");
                 return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private class NetworkBroadcastReceiver extends BroadcastReceiver {
+
+        private final String TAG = NetworkBroadcastReceiver.class.getSimpleName();
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            // If the connection status has changes, update the menu items.
+            displayMenuItems();
+
+            // We will handle this check when the activity first starts manually, to prevent spam toasts.
+            if (isInitialStickyBroadcast()) {
+                Log.d(TAG, "Received initial sticky broadcast for network connectivity, ignoring.");
+                return;
+            }
+
+            // The connection state has changed, check to see what the status is.
+            if (NetworkUtility.isConnectedToInternet(context)) {
+                // We don't want to reload as they may be happy on the favourite movies selection.
+                String message = "Internet connection has been restored, you can change the sort order to load new movies.";
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+            } else {
+                String message = "Internet connection has been lost, will load your saved (favourite) movies.";
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+                // Reload the movies, it will change to favourites (offline) movies if required.
+                loadMovies(context);
+            }
         }
     }
 

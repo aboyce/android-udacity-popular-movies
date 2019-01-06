@@ -1,8 +1,11 @@
 package uk.ab.popularmovies;
 
 import android.app.Activity;
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.Observer;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -23,6 +26,7 @@ import uk.ab.popularmovies.entities.Movie;
 import uk.ab.popularmovies.entities.MovieReview;
 import uk.ab.popularmovies.entities.MovieTrailer;
 import uk.ab.popularmovies.entities.database.ApplicationDatabase;
+import uk.ab.popularmovies.entities.executors.ApplicationExecutors;
 import uk.ab.popularmovies.preferences.TMDbPreferences;
 import uk.ab.popularmovies.utilities.MovieReviewUtility;
 import uk.ab.popularmovies.utilities.MovieTrailerUtility;
@@ -62,37 +66,23 @@ public class MovieActivity extends AppCompatActivity {
         setContentView(R.layout.activity_movie);
 
         Intent callingIntent = getIntent();
-        if (callingIntent == null) {
-            Log.e(TAG, "The calling intent was null");
+
+        if (callingIntent == null || !callingIntent.hasExtra(MOVIE_INTENT)) {
+            Log.e(TAG, "The calling intent was null or not provided with a Movie.");
             finish();
             return;
         }
-        Log.d(TAG, "The calling intent was present.");
-        if (!callingIntent.hasExtra(MOVIE_INTENT)) {
-            Log.e(TAG, "The calling intent was not provided with a Movie.");
-            finish();
-            return;
-        }
+
         Log.d(TAG, "The calling intent was provided with the expected extra.");
+
+        initialiseViews();
+        // Get the passed through movie from the main activity.
         movie = callingIntent.getParcelableExtra(MOVIE_INTENT);
         Log.d(TAG, "Extracted the movie '" + movie.getTitle() + "' from the intent extra.");
 
         // Initialise/populate the database instance.
         database = ApplicationDatabase.getInstance(getApplicationContext());
 
-        mMovieTitleTextView = findViewById(R.id.tv_movie_title);
-        mMovieImageImageView = findViewById(R.id.iv_movie_image);
-        mMoviePlotSynopsisTextView = findViewById(R.id.tv_movie_plot_synopsis);
-        mMovieReleaseDateTextView = findViewById(R.id.tv_movie_release_date);
-        mMovieRatingTextView = findViewById(R.id.tv_movie_rating);
-        mMovieFavouriteImageView = findViewById(R.id.iv_movie_favourite);
-        mMovieReviewLabel = findViewById(R.id.tv_movie_reviews_label);
-        mMovieTrailerLabel = findViewById(R.id.tv_movie_trailers_label);
-        Log.d(TAG, "Located all of the view components.");
-
-        // Locate and assign the RecyclerView to display the movie trailers and reviews.
-        mMovieTrailerRecyclerView = findViewById(R.id.rview_movie_trailers);
-        mMovieReviewRecyclerView = findViewById(R.id.rview_movie_reviews);
         // Create a new LayoutManager for the movie trailers and reviews.
         LinearLayoutManager trailersLayoutManager = new LinearLayoutManager(this);
         LinearLayoutManager reviewsLayoutManager = new LinearLayoutManager(this);
@@ -107,7 +97,23 @@ public class MovieActivity extends AppCompatActivity {
 
         updateUserInterface();
         loadMovieExtras();
-        configureClickEvents();
+        configureFavouriteClickEvent();
+    }
+
+    private void initialiseViews() {
+        Log.d(TAG, "Will initialise all of the view components.");
+        mMovieTitleTextView = findViewById(R.id.tv_movie_title);
+        mMovieImageImageView = findViewById(R.id.iv_movie_image);
+        mMoviePlotSynopsisTextView = findViewById(R.id.tv_movie_plot_synopsis);
+        mMovieReleaseDateTextView = findViewById(R.id.tv_movie_release_date);
+        mMovieRatingTextView = findViewById(R.id.tv_movie_rating);
+        mMovieFavouriteImageView = findViewById(R.id.iv_movie_favourite);
+        mMovieReviewLabel = findViewById(R.id.tv_movie_reviews_label);
+        mMovieTrailerLabel = findViewById(R.id.tv_movie_trailers_label);
+        // Recycler views.
+        mMovieTrailerRecyclerView = findViewById(R.id.rview_movie_trailers);
+        mMovieReviewRecyclerView = findViewById(R.id.rview_movie_reviews);
+        Log.d(TAG, "Located all of the view components.");
     }
 
     private void updateUserInterface() {
@@ -139,40 +145,49 @@ public class MovieActivity extends AppCompatActivity {
     }
 
     private void loadMovieExtras() {
-        Log.d(TAG, "Will invoke a new FetchTrailersTasks to load the movie trailers.");
-        new FetchTrailersTasks(this).execute(movie.getId());
 
-        Log.d(TAG, "Will invoke a new FetchReviewsTasks to load the movie reviews.");
-        new FetchReviewsTasks(this).execute(movie.getId());
+        // If there is no connection to the internet, there is no point trying to load from the API.
+        if (NetworkUtility.isConnectedToInternet(this)) {
+            Log.d(TAG, "Will invoke a new FetchTrailersTasks to load the movie trailers.");
+            new FetchTrailersTasks(this).execute(movie.getId());
 
-        // Check to see if the movie is a favourite or not (i.e does it exist in the database).
-        if (database.movieDao().getMovieFromId(movie.getId()) != null) {
-            // Movie exists in the database so it has been marked as a favourite.
-            mMovieFavouriteImageView.setImageResource(R.drawable.ic_star);
-            isMovieAFavourite = true;
-        } else {
-            // Movie does not exist in the database, so has not been marked as a favourite.
-            mMovieFavouriteImageView.setImageResource(R.drawable.ic_star_empty);
-            isMovieAFavourite = false;
+            Log.d(TAG, "Will invoke a new FetchReviewsTasks to load the movie reviews.");
+            new FetchReviewsTasks(this).execute(movie.getId());
         }
+
+        final LiveData<Movie> savedMovie = database.movieDao().getMovieFromId(movie.getId());
+        savedMovie.observe(this, movie -> {
+            if (movie == null) {
+                Log.d(TAG, "Movie does not exist in the database, so has not been marked as a favourite.");
+                mMovieFavouriteImageView.setImageResource(R.drawable.ic_star_empty);
+                isMovieAFavourite = false;
+            } else {
+                Log.d(TAG, "The movie exists in the database, it will be marked as a favourite.");
+                mMovieFavouriteImageView.setImageResource(R.drawable.ic_star);
+                isMovieAFavourite = true;
+            }
+        });
     }
 
-    private void configureClickEvents() {
+    private void configureFavouriteClickEvent() {
         mMovieFavouriteImageView.setOnClickListener(view -> {
             Log.d(TAG, "Favourite icon for " + movie.getId() + " has been clicked.");
-
             if (isMovieAFavourite) {
                 // The movie is a favourite, this means that it exists in the database.
                 // The icon has been clicked, this means that the movie should be removed from the database.
-                Log.d(TAG, "Movie " + movie.getId() + " is a favourite, it will be removed.");
-                database.movieDao().deleteMovie(movie);
+                ApplicationExecutors.getInstance().diskIO().execute(() -> {
+                    database.movieDao().deleteMovie(movie);
+                });
                 mMovieFavouriteImageView.setImageResource(R.drawable.ic_star_empty);
                 Log.d(TAG, "Movie " + movie.getId() + " has been removed.");
+
             } else {
                 // The movie is not a favourite, this means that it does not (yet) exist in the database.
                 // The icon has been clicked, this means that the movie should be added to the database.
                 Log.d(TAG, "Movie " + movie.getId() + " is not a favourite, it will be added.");
-                database.movieDao().insertMovie(movie);
+                ApplicationExecutors.getInstance().diskIO().execute(() -> {
+                    database.movieDao().insertMovie(movie);
+                });
                 mMovieFavouriteImageView.setImageResource(R.drawable.ic_star);
                 Log.d(TAG, "Movie " + movie.getId() + " has been added.");
             }

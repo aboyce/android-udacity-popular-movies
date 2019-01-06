@@ -22,4 +22,8 @@
         android:id="@+id/main_sort_rating_asc"
         android:title="@string/app_sort_rating_ascending"
         app:showAsAction="never"/>
+    <item
+        android:id="@+id/main_sort_favourites"
+        android:title="@string/app_sort_favourites"
+        app:showAsAction="never"/>
 </menu>
