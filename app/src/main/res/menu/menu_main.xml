@@ -7,21 +7,13 @@
         android:title="@string/app_refresh"
         app:showAsAction="ifRoom"/>
     <item
-        android:id="@+id/main_sort_popularity_desc"
-        android:title="@string/app_sort_popularity_descending"
+        android:id="@+id/main_sort_popularity"
+        android:title="@string/app_sort_popularity"
         app:showAsAction="never" />
     <item
-        android:id="@+id/main_sort_popularity_asc"
-        android:title="@string/app_sort_popularity_ascending"
-        app:showAsAction="never"/>
-    <item
-        android:id="@+id/main_sort_rating_desc"
-        android:title="@string/app_sort_rating_descending"
+        android:id="@+id/main_sort_rating"
+        android:title="@string/app_sort_rating"
         app:showAsAction="never" />
-    <item
-        android:id="@+id/main_sort_rating_asc"
-        android:title="@string/app_sort_rating_ascending"
-        app:showAsAction="never"/>
     <item
         android:id="@+id/main_sort_favourites"
         android:title="@string/app_sort_favourites"

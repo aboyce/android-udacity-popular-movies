@@ -21,12 +21,14 @@ public class TMDbPreferences {
     private static final String API_VERSION = "3";
     private static final String API_KEY = "api_key";
     private static final String API_DISCOVER = "discover";
+    private static final String API_POPULAR = "popular";
+    private static final String API_RATED = "top_rated";
     private static final String API_MOVIE = "movie";
     private static final String API_TRAILER = "videos";
     private static final String API_REVIEW = "reviews";
 
     private static final String API_SORT_BY = "sort_by";
-    private static final MovieSort API_SORT_BY_DEFAULT = MovieSort.POPULARITY_DESCENDING;
+    private static final MovieSort API_SORT_BY_DEFAULT = MovieSort.POPULARITY;
 
     private static final String API_LANGUAGE = "language";
     private static final String API_LANGUAGE_DEFAULT = "en-GB";
@@ -86,6 +88,56 @@ public class TMDbPreferences {
         Log.d(TAG, "Built the discover URL: " + cleanUrl);
 
         return discoverUrl;
+    }
+
+    public static URL getMoviePopularURL(Context context) {
+
+        URL moviePopularUrl = null;
+        String apiKey = getApiKey(context);
+
+        Uri builtUri = Uri.parse(API_BASE_URL + "/" + API_VERSION + "/" + API_MOVIE + "/" + API_POPULAR)
+                .buildUpon()
+                .appendQueryParameter(API_KEY, apiKey)
+                .appendQueryParameter(API_LANGUAGE, API_LANGUAGE_DEFAULT)
+                .build();
+
+        try {
+            moviePopularUrl = new URL(builtUri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Unable to parse the built movie URL, message: " + e.getMessage());
+        }
+
+        // Remove the API for logging purposes.
+        String cleanUrl = builtUri.toString().replace(apiKey, "****");
+        Log.d(TAG, "Built the discover URL: " + cleanUrl);
+
+        return moviePopularUrl;
+    }
+
+    public static URL getMovieRatedURL(Context context) {
+
+        URL moviePopularUrl = null;
+        String apiKey = getApiKey(context);
+
+        Uri builtUri = Uri.parse(API_BASE_URL + "/" + API_VERSION + "/" + API_MOVIE + "/" + API_POPULAR)
+                .buildUpon()
+                .appendQueryParameter(API_KEY, apiKey)
+                .appendQueryParameter(API_LANGUAGE, API_LANGUAGE_DEFAULT)
+                .build();
+
+        try {
+            moviePopularUrl = new URL(builtUri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Unable to parse the built movie URL, message: " + e.getMessage());
+        }
+
+        // Remove the API for logging purposes.
+        String cleanUrl = builtUri.toString().replace(apiKey, "****");
+        Log.d(TAG, "Built the discover URL: " + cleanUrl);
+
+        return moviePopularUrl;
     }
 
     public static URL getMovieTrailersURL(Context context, Integer movieId) {

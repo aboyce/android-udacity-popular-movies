@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
@@ -40,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private static final int NUMBER_OF_COLUMNS = 2;
-    private static final MovieSort DEFAULT_MOVIE_SORT = MovieSort.POPULARITY_DESCENDING;
+    private static final MovieSort DEFAULT_MOVIE_SORT = MovieSort.POPULARITY;
 
     private MovieSort movieSortOrder = DEFAULT_MOVIE_SORT;
 
@@ -168,16 +169,12 @@ public class MainActivity extends AppCompatActivity {
 
         if (NetworkUtility.isConnectedToInternet(this)) {
             Log.d(TAG, "Will update the menu items to have the online options.");
-            mMenu.findItem(R.id.main_sort_popularity_desc).setVisible(true);
-            mMenu.findItem(R.id.main_sort_popularity_asc).setVisible(true);
-            mMenu.findItem(R.id.main_sort_rating_desc).setVisible(true);
-            mMenu.findItem(R.id.main_sort_rating_asc).setVisible(true);
+            mMenu.findItem(R.id.main_sort_popularity).setVisible(true);
+            mMenu.findItem(R.id.main_sort_rating).setVisible(true);
         } else {
             Log.d(TAG, "Will update the menu items to have only the offline options.");
-            mMenu.findItem(R.id.main_sort_popularity_desc).setVisible(false);
-            mMenu.findItem(R.id.main_sort_popularity_asc).setVisible(false);
-            mMenu.findItem(R.id.main_sort_rating_desc).setVisible(false);
-            mMenu.findItem(R.id.main_sort_rating_asc).setVisible(false);
+            mMenu.findItem(R.id.main_sort_popularity).setVisible(false);
+            mMenu.findItem(R.id.main_sort_rating).setVisible(false);
         }
         // This is always shown.
         mMenu.findItem(R.id.main_sort_favourites).setVisible(true);
@@ -192,24 +189,14 @@ public class MainActivity extends AppCompatActivity {
                 Log.i(TAG, "The refresh menu item was clicked.");
                 loadMovies(getApplicationContext());
                 return true;
-            case R.id.main_sort_popularity_desc:
-                Log.i(TAG, "The sort by popularity descending menu item was clicked.");
-                movieSortOrder = MovieSort.POPULARITY_DESCENDING;
+            case R.id.main_sort_popularity:
+                Log.i(TAG, "The sort by popularity menu item was clicked.");
+                movieSortOrder = MovieSort.POPULARITY;
                 loadMovies(getApplicationContext());
                 return true;
-            case R.id.main_sort_popularity_asc:
-                Log.i(TAG, "The sort by popularity ascending menu item was clicked.");
-                movieSortOrder = MovieSort.POPULARITY_ASCENDING;
-                loadMovies(getApplicationContext());
-                return true;
-            case R.id.main_sort_rating_desc:
-                Log.i(TAG, "The sort by rating descending menu item was clicked.");
-                movieSortOrder = MovieSort.RATED_DESCENDING;
-                loadMovies(getApplicationContext());
-                return true;
-            case R.id.main_sort_rating_asc:
-                Log.i(TAG, "The sort by rating ascending menu item was clicked.");
-                movieSortOrder = MovieSort.RATED_ASCENDING;
+            case R.id.main_sort_rating:
+                Log.i(TAG, "The sort by rating menu item was clicked.");
+                movieSortOrder = MovieSort.RATED;
                 loadMovies(getApplicationContext());
                 return true;
             case R.id.main_sort_favourites:
@@ -276,7 +263,14 @@ public class MainActivity extends AppCompatActivity {
             try {
                 // Get the generated request URL.
                 Log.d(TAG, "Will attempt to get the movie request URL.");
-                URL moviesRequestUrl = TMDbPreferences.getDiscoverURL(weakActivity.get(), movieSortOrder);
+                URL moviesRequestUrl;
+                if (movieSortOrder.equals(MovieSort.POPULARITY)) {
+                    moviesRequestUrl = TMDbPreferences.getMoviePopularURL(weakActivity.get());
+                } else if (movieSortOrder.equals(MovieSort.RATED)) {
+                    moviesRequestUrl = TMDbPreferences.getMovieRatedURL(weakActivity.get());
+                } else {
+                    moviesRequestUrl = TMDbPreferences.getDiscoverURL(weakActivity.get(), movieSortOrder);
+                }
                 publishProgress(10);
                 Log.d(TAG, "Retrieved the URL for the movie request.");
 
@@ -319,7 +313,9 @@ public class MainActivity extends AppCompatActivity {
             super.onProgressUpdate(values);
             Integer progress = values[0];
             Log.d(TAG, "Progress update '" + progress + "'.");
-            mMoviesLoadingProgressBar.setProgress(progress, true);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                mMoviesLoadingProgressBar.setProgress(progress, true);
+            }
         }
 
         @Override
