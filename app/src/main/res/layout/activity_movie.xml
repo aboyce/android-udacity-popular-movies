@@ -113,7 +113,7 @@
             android:layout_marginTop="0dp"
             android:layout_marginBottom="5dp"
             android:layout_width="match_parent"
-            android:layout_height="50dp"/>
+            android:layout_height="100dp"/>
 
         <TextView
             android:id="@+id/tv_movie_reviews_label"
@@ -134,7 +134,7 @@
             android:layout_marginTop="0dp"
             android:layout_marginBottom="5dp"
             android:layout_width="match_parent"
-            android:layout_height="50dp" />
+            android:layout_height="100dp" />
 
         <TextView
             android:id="@+id/tv_movie_plot_synopsis_label"
