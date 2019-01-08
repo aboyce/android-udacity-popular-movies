@@ -18,6 +18,7 @@ import com.squareup.picasso.Picasso;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.URL;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import uk.ab.popularmovies.entities.Movie;
@@ -136,7 +137,8 @@ public class MovieActivity extends AppCompatActivity {
         if (movie.getReleaseDate() == null) {
             Log.w(TAG, "There was not release date available for '" + movie.getTitle() + "'.");
         } else {
-            String releaseDate = Integer.toString(movie.getReleaseDate().getYear());
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd LLLL yyyy");
+            String releaseDate = movie.getReleaseDate().format(formatter);
             Log.d(TAG, "A release date '" + releaseDate + "' is available for '" + movie.getTitle() + "'.");
             mMovieReleaseDateTextView.setText(releaseDate);
         }
