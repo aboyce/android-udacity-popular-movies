@@ -1,11 +1,9 @@
 package uk.ab.popularmovies;
 
-import android.app.Activity;
 import android.arch.lifecycle.LiveData;
 import android.content.Intent;
-import android.os.AsyncTask;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -15,25 +13,25 @@ import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
 
-import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import uk.ab.popularmovies.asynctasks.GetReviewsAsyncTask;
+import uk.ab.popularmovies.asynctasks.GetReviewsAsyncTaskExecutor;
+import uk.ab.popularmovies.asynctasks.GetTrailersAsyncTask;
+import uk.ab.popularmovies.asynctasks.GetTrailersAsyncTaskExecutor;
 import uk.ab.popularmovies.entities.Movie;
 import uk.ab.popularmovies.entities.MovieReview;
 import uk.ab.popularmovies.entities.MovieTrailer;
 import uk.ab.popularmovies.entities.database.ApplicationDatabase;
 import uk.ab.popularmovies.entities.executors.ApplicationExecutors;
 import uk.ab.popularmovies.preferences.TMDbPreferences;
-import uk.ab.popularmovies.utilities.MovieReviewUtility;
-import uk.ab.popularmovies.utilities.MovieTrailerUtility;
 import uk.ab.popularmovies.utilities.NetworkUtility;
 import uk.ab.popularmovies.view.MovieReviewAdapter;
 import uk.ab.popularmovies.view.MovieTrailerAdapter;
 
-public class MovieActivity extends AppCompatActivity {
+public class MovieActivity extends AppCompatActivity implements GetTrailersAsyncTaskExecutor, GetReviewsAsyncTaskExecutor {
 
     public static final String MOVIE_INTENT = "MOVIE_OBJECT";
 
@@ -146,10 +144,10 @@ public class MovieActivity extends AppCompatActivity {
 
     private void loadMovieExtras() {
         if (NetworkUtility.isConnectedToInternet(this)) {
-            Log.d(TAG, "Will invoke a new FetchTrailersTasks to load the movie trailers.");
-            new FetchTrailersTasks(this).execute(movie.getId());
-            Log.d(TAG, "Will invoke a new FetchReviewsTasks to load the movie reviews.");
-            new FetchReviewsTasks(this).execute(movie.getId());
+            Log.d(TAG, "Will invoke a new GetTrailersAsyncTask to load the movie trailers.");
+            new GetTrailersAsyncTask(this, this).execute(movie.getId());
+            Log.d(TAG, "Will invoke a new GetReviewsAsyncTask to load the movie reviews.");
+            new GetReviewsAsyncTask(this, this).execute(movie.getId());
         } else {
             // Hide the recycler views if there is going to be nothing to show.
             mMovieTrailerRecyclerView.setVisibility(View.GONE);
@@ -197,156 +195,43 @@ public class MovieActivity extends AppCompatActivity {
         });
     }
 
-    public class FetchTrailersTasks extends AsyncTask<Integer, Integer, List<MovieTrailer>> {
-
-        private final String TAG = FetchTrailersTasks.class.getSimpleName();
-
-        private final WeakReference<Activity> weakActivity;
-
-        FetchTrailersTasks(Activity activity) {
-            this.weakActivity = new WeakReference<>(activity);
+    @Override
+    public void onGetTrailersTaskCompletion(List<MovieTrailer> movieTrailers) {
+        // Check the the movie trailers are present before use.
+        if (movieTrailers == null) {
+            Log.e(TAG, "Could not load the movie trailers for movie " + movie.getTitle() + ".");
+            return;
         }
-
-        @Override
-        protected List<MovieTrailer> doInBackground(Integer... movieIds) {
-
-            if (movieIds.length != 1) {
-                String message = "The task has not been called with the single expected Movie Id.";
-                Log.e(TAG, message);
-                throw new IllegalArgumentException(message);
-            }
-
-            try {
-                Integer movieId = movieIds[0];
-
-                Log.d(TAG, "Will attempt to get the movie trailer URL for movie " + movieId + ".");
-                URL movieTrailerUrl = TMDbPreferences.getMovieTrailersURL(weakActivity.get(), movieId);
-                Log.d(TAG, "Retrieved the URL for the movie trailer request.");
-
-                Log.d(TAG, "Will attempt to request the movie trailers from the URL.");
-                String movieTrailerJson = NetworkUtility.getJSONFromURL(movieTrailerUrl);
-                if (movieTrailerJson == null) {
-                    Log.e(TAG, "The movie trailer JSON has been returned as null.");
-                    return null;
-                }
-                Log.d(TAG, "The movie trailer JSON data has been returned.");
-
-                // Now the JSON has been returned, convert this to a List of movie trailers.
-                Log.d(TAG, "Will attempt to parse the movie trailer JSON into movie trailer objects.");
-                List<MovieTrailer> movieTrailers = MovieTrailerUtility.getMovieTrailersFromJson(movieTrailerJson);
-                if (movieTrailers == null) {
-                    Log.e(TAG, "The attempt to parse the movie trailer JSON returned null.");
-                    return null;
-                }
-                Log.d(TAG, "The movie trailer JSON has successfully been parsed into movie trailers.");
-
-                // Now the movie trailers have been converted, return them to the UI thread.
-                Log.d(TAG, "Will return the " + movieTrailers.size() + " movie trailers to be displayed.");
-                return movieTrailers;
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                String message = "Could not retrieve the movie trailer JSON or parse them into objects";
-                Log.e(TAG, message + ", message: " + e.getMessage());
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(List<MovieTrailer> movieTrailers) {
-            // Check the the movie trailers are present before use.
-            if (movieTrailers == null) {
-                Log.e(TAG, "Could not load the movie trailers for movie " + movie.getTitle() + ".");
-                return;
-            }
-
-            // Update the adapter with the newly retrieved trailers.
-            mMovieTrailerAdapter.setMovieTrailers(movieTrailers);
-            // Update the label so that it displays the number of trailers.
-            String trailersLabel = getString(R.string.movie_trailers) + " (" + movieTrailers.size() + ")";
-            mMovieTrailerLabel.setText(trailersLabel);
-            // Hide the recycler view if there is nothing to show.
-            if (movieTrailers.size() < 1) {
-                mMovieTrailerRecyclerView.setVisibility(View.GONE);
-            } else {
-                mMovieTrailerRecyclerView.setVisibility(View.VISIBLE);
-            }
+        // Update the adapter with the newly retrieved trailers.
+        mMovieTrailerAdapter.setMovieTrailers(movieTrailers);
+        // Update the label so that it displays the number of trailers.
+        String trailersLabel = getString(R.string.movie_trailers) + " (" + movieTrailers.size() + ")";
+        mMovieTrailerLabel.setText(trailersLabel);
+        // Hide the recycler view if there is nothing to show.
+        if (movieTrailers.size() < 1) {
+            mMovieTrailerRecyclerView.setVisibility(View.GONE);
+        } else {
+            mMovieTrailerRecyclerView.setVisibility(View.VISIBLE);
         }
     }
 
-    public class FetchReviewsTasks extends AsyncTask<Integer, Integer, List<MovieReview>> {
-
-        private final String TAG = FetchReviewsTasks.class.getSimpleName();
-
-        private final WeakReference<Activity> weakActivity;
-
-        FetchReviewsTasks(Activity activity) {
-            this.weakActivity = new WeakReference<>(activity);
+    @Override
+    public void onGetReviewsTaskCompletion(List<MovieReview> movieReviews) {
+        // Check the the movie reviews are present before use.
+        if (movieReviews == null) {
+            Log.e(TAG, "Could not load the movie reviews for movie " + movie.getTitle() + ".");
+            return;
         }
-
-        @Override
-        protected List<MovieReview> doInBackground(Integer... movieIds) {
-
-            if (movieIds.length != 1) {
-                String message = "The task has not been called with the single expected Movie Id.";
-                Log.e(TAG, message);
-                throw new IllegalArgumentException(message);
-            }
-
-            try {
-                Integer movieId = movieIds[0];
-
-                Log.d(TAG, "Will attempt to get the movie reviews URL for movie " + movieId + ".");
-                URL movieReviewsUrl = TMDbPreferences.getMovieReviewsURL(weakActivity.get(), movieId);
-                Log.d(TAG, "Retrieved the URL for the movie reviews request.");
-
-                Log.d(TAG, "Will attempt to request the movie reviews from the URL.");
-                String movieReviewsJson = NetworkUtility.getJSONFromURL(movieReviewsUrl);
-                if (movieReviewsJson == null) {
-                    Log.e(TAG, "The movie reviews JSON has been returned as null.");
-                    return null;
-                }
-                Log.d(TAG, "The movie reviews JSON data has been returned.");
-
-                // Now the JSON has been returned, convert this to a List of movie reviews.
-                Log.d(TAG, "Will attempt to parse the movie reviews JSON into movie review objects.");
-                List<MovieReview> movieReviews = MovieReviewUtility.getMovieReviewsFromJson(movieReviewsJson);
-                if (movieReviews == null) {
-                    Log.e(TAG, "The attempt to parse the movie reviews JSON returned null.");
-                    return null;
-                }
-                Log.d(TAG, "The movie reviews JSON has successfully been parsed into movie reviews.");
-
-                // Now the movie reviews have been converted, return them to the UI thread.
-                Log.d(TAG, "Will return the " + movieReviews.size() + " movie reviews to be displayed.");
-                return movieReviews;
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                String message = "Could not retrieve the movie reviews JSON or parse them into objects";
-                Log.e(TAG, message + ", message: " + e.getMessage());
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(List<MovieReview> movieReviews) {
-            // Check the the movie reviews are present before use.
-            if (movieReviews == null) {
-                Log.e(TAG, "Could not load the movie reviews for movie " + movie.getTitle() + ".");
-                return;
-            }
-            // Update the adapter with the newly retrieved reviews.
-            mMovieReviewAdapter.setMovieReview(movieReviews);
-            // Update the label so that it displays the number of reviews.
-            String reviewsLabel = getString(R.string.movie_reviews) + " (" + movieReviews.size() + ")";
-            mMovieReviewLabel.setText(reviewsLabel);
-            // Hide the recycler view if there is nothing to show.
-            if (movieReviews.size() < 1) {
-                mMovieReviewRecyclerView.setVisibility(View.GONE);
-            } else {
-                mMovieReviewRecyclerView.setVisibility(View.VISIBLE);
-            }
+        // Update the adapter with the newly retrieved reviews.
+        mMovieReviewAdapter.setMovieReview(movieReviews);
+        // Update the label so that it displays the number of reviews.
+        String reviewsLabel = getString(R.string.movie_reviews) + " (" + movieReviews.size() + ")";
+        mMovieReviewLabel.setText(reviewsLabel);
+        // Hide the recycler view if there is nothing to show.
+        if (movieReviews.size() < 1) {
+            mMovieReviewRecyclerView.setVisibility(View.GONE);
+        } else {
+            mMovieReviewRecyclerView.setVisibility(View.VISIBLE);
         }
     }
 }
