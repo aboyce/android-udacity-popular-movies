@@ -9,3 +9,5 @@
 /build
 /captures
 .externalNativeBuild
+# This prevents the API key from accidentally being committed.
+app/src/main/res/values/configuration.xml
