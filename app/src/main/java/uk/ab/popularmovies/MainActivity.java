@@ -1,6 +1,5 @@
 package uk.ab.popularmovies;
 
-import android.app.Activity;
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.BroadcastReceiver;
@@ -8,8 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
-import android.os.AsyncTask;
-import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
@@ -22,21 +19,18 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.net.URL;
 import java.util.List;
 
+import uk.ab.popularmovies.asynctasks.GetMoviesAsyncTask;
+import uk.ab.popularmovies.asynctasks.GetMoviesAsyncTaskExecutor;
 import uk.ab.popularmovies.entities.Movie;
 import uk.ab.popularmovies.entities.database.ApplicationDatabase;
 import uk.ab.popularmovies.entities.enums.MovieSort;
-import uk.ab.popularmovies.preferences.TMDbPreferences;
-import uk.ab.popularmovies.utilities.MovieUtility;
 import uk.ab.popularmovies.utilities.NetworkUtility;
 import uk.ab.popularmovies.view.MovieAdapter;
 import uk.ab.popularmovies.viewmodels.MainViewModel;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements GetMoviesAsyncTaskExecutor {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -120,8 +114,8 @@ public class MainActivity extends AppCompatActivity {
 
         // If there is an internet connection, and something to load, get the movies from the API.
         if (isConnected && !(isFavourites)) {
-            Log.d(TAG, "Will invoke a new FetchDiscoverMoviesTask to load the Movies.");
-            new FetchDiscoverMoviesTask(this).execute();
+            Log.d(TAG, "Will invoke a new GetMoviesAsyncTask to load the Movies.");
+            new GetMoviesAsyncTask(this, this).execute(movieSortOrder);
             return;
         }
 
@@ -210,6 +204,31 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onGetMoviesTaskStart() {
+        // Now the task is starting, show the progress bar.
+        mMoviesLoadingProgressBar.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onGetMoviesTaskProgressUpdate(int progress) {
+        Log.d(TAG, "Progress update '" + progress + "'.");
+        mMoviesLoadingProgressBar.setProgress(progress, true);
+    }
+
+    @Override
+    public void onGetMoviesTaskCompletion(List<Movie> movies) {
+        // No matter what, the task has finished, hide the progress bar.
+        mMoviesLoadingProgressBar.setVisibility(View.INVISIBLE);
+        // Check the the Movies are present before use.
+        if (movies == null) {
+            showError(getString(R.string.movie_load_error));
+            return;
+        }
+        // The movies are present, show them on the UI.
+        showMovies(movies);
+    }
+
     private class NetworkBroadcastReceiver extends BroadcastReceiver {
 
         private final String TAG = NetworkBroadcastReceiver.class.getSimpleName();
@@ -237,98 +256,6 @@ public class MainActivity extends AppCompatActivity {
                 // Reload the movies, it will change to favourites (offline) movies if required.
                 loadMovies(context);
             }
-        }
-    }
-
-    public class FetchDiscoverMoviesTask extends AsyncTask<Void, Integer, List<Movie>> {
-
-        private final String TAG = FetchDiscoverMoviesTask.class.getSimpleName();
-
-        private final WeakReference<Activity> weakActivity;
-
-        FetchDiscoverMoviesTask(Activity activity) {
-            this.weakActivity = new WeakReference<>(activity);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            // Now the task is starting, show the progress bar.
-            mMoviesLoadingProgressBar.setVisibility(View.VISIBLE);
-        }
-
-        @Override
-        protected List<Movie> doInBackground(Void... voids) {
-
-            try {
-                // Get the generated request URL.
-                Log.d(TAG, "Will attempt to get the movie request URL.");
-                URL moviesRequestUrl;
-                if (movieSortOrder.equals(MovieSort.POPULARITY)) {
-                    moviesRequestUrl = TMDbPreferences.getMoviePopularURL(weakActivity.get());
-                } else if (movieSortOrder.equals(MovieSort.RATED)) {
-                    moviesRequestUrl = TMDbPreferences.getMovieRatedURL(weakActivity.get());
-                } else {
-                    moviesRequestUrl = TMDbPreferences.getDiscoverURL(weakActivity.get(), movieSortOrder);
-                }
-                publishProgress(10);
-                Log.d(TAG, "Retrieved the URL for the movie request.");
-
-                // Use the generated URL to go and retrieve the movie JSON data.
-                Log.d(TAG, "Will attempt to request the Movies from the URL.");
-                String moviesJson = NetworkUtility.getJSONFromURL(moviesRequestUrl);
-                publishProgress(20);
-                if (moviesJson == null) {
-                    Log.e(TAG, "The movie JSON has been returned as null.");
-                    return null;
-                }
-                Log.d(TAG, "The movie JSON data has been returned.");
-
-                // Now the JSON has been returned, convert this to a List of Movies.
-                Log.d(TAG, "Will attempt to parse the movie JSON into Movie objects.");
-                List<Movie> movies = MovieUtility.getMoviesFromDiscoverJson(moviesJson);
-                publishProgress(70);
-                if (movies == null) {
-                    Log.e(TAG, "The attempt to parse the movie JSON returned null.");
-                    return null;
-                }
-                Log.d(TAG, "The movie JSON has successfully been parsed into movies.");
-                publishProgress(80);
-
-                // Now the Movies have been converted, return them to the UI thread.
-                Log.d(TAG, "Will return the " + movies.size() + " movies to be displayed.");
-                publishProgress(100);
-                return movies;
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                String message = "Could not retrieve the movie JSON or parse them into objects";
-                Log.e(TAG, message + ", message: " + e.getMessage());
-                return null;
-            }
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            super.onProgressUpdate(values);
-            Integer progress = values[0];
-            Log.d(TAG, "Progress update '" + progress + "'.");
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                mMoviesLoadingProgressBar.setProgress(progress, true);
-            }
-        }
-
-        @Override
-        protected void onPostExecute(List<Movie> movies) {
-            // No matter what, the task has finished, hide the progress bar.
-            mMoviesLoadingProgressBar.setVisibility(View.INVISIBLE);
-            // Check the the Movies are present before use.
-            if (movies == null) {
-                showError(getString(R.string.movie_load_error));
-                return;
-            }
-            // The movies are present, show them on the UI.
-            showMovies(movies);
         }
     }
 }
