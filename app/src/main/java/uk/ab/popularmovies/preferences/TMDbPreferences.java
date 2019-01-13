@@ -120,7 +120,7 @@ public class TMDbPreferences {
         URL moviePopularUrl = null;
         String apiKey = getApiKey(context);
 
-        Uri builtUri = Uri.parse(API_BASE_URL + "/" + API_VERSION + "/" + API_MOVIE + "/" + API_POPULAR)
+        Uri builtUri = Uri.parse(API_BASE_URL + "/" + API_VERSION + "/" + API_MOVIE + "/" + API_RATED)
                 .buildUpon()
                 .appendQueryParameter(API_KEY, apiKey)
                 .appendQueryParameter(API_LANGUAGE, API_LANGUAGE_DEFAULT)
