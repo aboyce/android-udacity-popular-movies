@@ -3,10 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/main_refresh"
-        android:title="@string/app_refresh"
-        app:showAsAction="ifRoom"/>
-    <item
         android:id="@+id/main_sort_popularity"
         android:title="@string/app_sort_popularity"
         app:showAsAction="never" />

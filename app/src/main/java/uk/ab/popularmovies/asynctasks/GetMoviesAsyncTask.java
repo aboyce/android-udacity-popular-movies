@@ -1,6 +1,6 @@
 package uk.ab.popularmovies.asynctasks;
 
-import android.app.Activity;
+import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -15,44 +15,33 @@ import uk.ab.popularmovies.preferences.TMDbPreferences;
 import uk.ab.popularmovies.utilities.MovieUtility;
 import uk.ab.popularmovies.utilities.NetworkUtility;
 
-public class GetMoviesAsyncTask extends AsyncTask<MovieSort, Integer, List<Movie>> {
+public class GetMoviesAsyncTask extends AsyncTask<Void, Integer, List<Movie>> {
 
     private final String TAG = GetMoviesAsyncTask.class.getSimpleName();
 
-    private final WeakReference<Activity> weakActivity;
+    private final WeakReference<Context> weakContext;
     private final GetMoviesAsyncTaskExecutor executor;
+    private final MovieSort movieSort;
 
-    public GetMoviesAsyncTask(Activity activity, GetMoviesAsyncTaskExecutor executor) {
-        this.weakActivity = new WeakReference<>(activity);
+    public GetMoviesAsyncTask(Context context, GetMoviesAsyncTaskExecutor executor, MovieSort movieSort) {
+        this.weakContext = new WeakReference<Context>(context);
         this.executor = executor;
+        this.movieSort = movieSort;
     }
 
     @Override
-    protected void onPreExecute() {
-        super.onPreExecute();
-        executor.onGetMoviesTaskStart();
-    }
-
-    @Override
-    protected List<Movie> doInBackground(MovieSort... movieSorts) {
-
-        MovieSort movieSort = movieSorts[0];
-        if (movieSort == null) {
-            String message = "The expected movie sort was not passed through.";
-            Log.e(TAG, message);
-            throw new IllegalArgumentException(message);
-        }
+    protected List<Movie> doInBackground(Void... voids) {
 
         try {
             // Get the generated request URL.
             Log.d(TAG, "Will attempt to get the movie request URL.");
             URL moviesRequestUrl;
             if (movieSort.equals(MovieSort.POPULARITY)) {
-                moviesRequestUrl = TMDbPreferences.getMoviePopularURL(weakActivity.get());
+                moviesRequestUrl = TMDbPreferences.getMoviePopularURL(weakContext.get());
             } else if (movieSort.equals(MovieSort.RATED)) {
-                moviesRequestUrl = TMDbPreferences.getMovieRatedURL(weakActivity.get());
+                moviesRequestUrl = TMDbPreferences.getMovieRatedURL(weakContext.get());
             } else {
-                moviesRequestUrl = TMDbPreferences.getDiscoverURL(weakActivity.get(), movieSort);
+                moviesRequestUrl = TMDbPreferences.getDiscoverURL(weakContext.get(), movieSort);
             }
             publishProgress(10);
             Log.d(TAG, "Retrieved the URL for the movie request.");
@@ -92,13 +81,7 @@ public class GetMoviesAsyncTask extends AsyncTask<MovieSort, Integer, List<Movie
     }
 
     @Override
-    protected void onProgressUpdate(Integer... values) {
-        super.onProgressUpdate(values);
-        executor.onGetMoviesTaskProgressUpdate(values[0]);
-    }
-
-    @Override
     protected void onPostExecute(List<Movie> movies) {
-        executor.onGetMoviesTaskCompletion(movies);
+        executor.onGetMoviesTaskCompletion(movieSort, movies);
     }
 }

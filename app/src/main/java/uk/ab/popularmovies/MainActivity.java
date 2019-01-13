@@ -1,6 +1,5 @@
 package uk.ab.popularmovies;
 
-import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -8,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -15,40 +15,33 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.List;
 
-import uk.ab.popularmovies.asynctasks.GetMoviesAsyncTask;
-import uk.ab.popularmovies.asynctasks.GetMoviesAsyncTaskExecutor;
 import uk.ab.popularmovies.entities.Movie;
-import uk.ab.popularmovies.entities.database.ApplicationDatabase;
 import uk.ab.popularmovies.entities.enums.MovieSort;
 import uk.ab.popularmovies.utilities.NetworkUtility;
 import uk.ab.popularmovies.view.MovieAdapter;
 import uk.ab.popularmovies.viewmodels.MainViewModel;
 
-public class MainActivity extends AppCompatActivity implements GetMoviesAsyncTaskExecutor {
+public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String BUNDLE_MOVIES_VIEW_STATE = "BUNDLE_MOVIES_VIEW_STATE";
 
     private static final int NUMBER_OF_COLUMNS = 2;
-    private static final MovieSort DEFAULT_MOVIE_SORT = MovieSort.POPULARITY;
 
-    private MovieSort movieSortOrder = DEFAULT_MOVIE_SORT;
+    private MainViewModel viewModel;
 
     private RecyclerView mMoviesRecyclerView;
     private MovieAdapter mMovieAdapter;
 
     private TextView mErrorMessageTextView;
-    private ProgressBar mMoviesLoadingProgressBar;
 
     private NetworkBroadcastReceiver mNetworkReceiver;
     private IntentFilter mNetworkIntentFilter;
-
-    private ApplicationDatabase mDatabase;
 
     private Menu mMenu;
 
@@ -57,9 +50,8 @@ public class MainActivity extends AppCompatActivity implements GetMoviesAsyncTas
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Locate and assign the error/progress view items.
+        // Locate and assign the error view item.
         mErrorMessageTextView = findViewById(R.id.tv_main_error);
-        mMoviesLoadingProgressBar = findViewById(R.id.pb_loading_movies);
 
         // Locate and assign the RecyclerView to display the movies.
         mMoviesRecyclerView = findViewById(R.id.rview_movies);
@@ -73,13 +65,24 @@ public class MainActivity extends AppCompatActivity implements GetMoviesAsyncTas
         mMoviesRecyclerView.setLayoutManager(layoutManager);
         mMoviesRecyclerView.setAdapter(mMovieAdapter);
 
+        viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
+        viewModel.getObserver().observe(this, event -> {
+            // The view model has let us know that a movie update has occurred.
+            Log.d(TAG, "An update has been made from the view model.");
+            showMovies(viewModel.getMovies(getApplicationContext()));
+            // As soon as the movies have loaded, ensure the scroll position is correct.
+            if (savedInstanceState != null) {
+                Log.d(TAG, "There is a saved instance state, will attempt to resume.");
+                // Restore the recycler view.
+                if (savedInstanceState.containsKey(BUNDLE_MOVIES_VIEW_STATE)) {
+                    Parcelable savedRecyclerViewState = savedInstanceState.getParcelable(BUNDLE_MOVIES_VIEW_STATE);
+                    layoutManager.onRestoreInstanceState(savedRecyclerViewState);
+                    Log.d(TAG, "Restored the recycler view state.");
+                }
+            }
+        });
         mNetworkReceiver = new NetworkBroadcastReceiver();
         mNetworkIntentFilter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
-
-        mDatabase = ApplicationDatabase.getInstance(getApplicationContext());
-
-        loadMovies(getApplicationContext());
-        setupViewModel();
     }
 
     @Override
@@ -89,6 +92,14 @@ public class MainActivity extends AppCompatActivity implements GetMoviesAsyncTas
         registerReceiver(mNetworkReceiver, mNetworkIntentFilter);
         // The connection status may have changed since the application was last used.
         displayMenuItems();
+        if (viewModel.getLiveMovies() != null) {
+            viewModel.getLiveMovies().observe(this, movies -> {
+                viewModel.setLocalMovies(movies);
+                if (viewModel.getMovieSortOrder().equals(MovieSort.FAVOURITES)) {
+                    showMovies(movies);
+                }
+            });
+        }
     }
 
     @Override
@@ -108,38 +119,21 @@ public class MainActivity extends AppCompatActivity implements GetMoviesAsyncTas
     }
 
     private void loadMovies(Context context) {
-
-        boolean isConnected = NetworkUtility.isConnectedToInternet(context);
-        boolean isFavourites = movieSortOrder.equals(MovieSort.FAVOURITES);
-
-        // If there is an internet connection, and something to load, get the movies from the API.
-        if (isConnected && !(isFavourites)) {
-            Log.d(TAG, "Will invoke a new GetMoviesAsyncTask to load the Movies.");
-            new GetMoviesAsyncTask(this, this).execute(movieSortOrder);
-            return;
-        }
-
-        // If there is no connection but we are loading movies, ensure it is on the favourites selection.
-        // There is no other option if the connection is down, other scenarios have already been handled.
-        movieSortOrder = MovieSort.FAVOURITES;
-
-        // Now we can load the movies in from the local database.
-        final LiveData<List<Movie>> favouriteMovies = mDatabase.movieDao().getAllMovies();
-        favouriteMovies.observe(this, movies -> {
-            Log.d(TAG, "Receiving database update of favourite movies, will display.");
-            showMovies(movies);
-        });
+        showMovies(viewModel.getMovies(context));
     }
 
-    private void setupViewModel() {
-        MainViewModel viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
-        viewModel.getMovies().observe(this, movies -> {
-            Log.d(TAG, "The movies in the main view model has been updated.");
-            // If the application was primarily offline, this is where you would update the movie collection.
-        });
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        Log.d(TAG, "Saving the recycler view state.");
+        outState.putParcelable(BUNDLE_MOVIES_VIEW_STATE, mMoviesRecyclerView.getLayoutManager().onSaveInstanceState());
     }
 
     private void showMovies(List<Movie> movies) {
+        if (movies == null) {
+            Log.w(TAG, "The list of movies to show was null.");
+            return;
+        }
         // Hide the error message, if applicable.
         mErrorMessageTextView.setVisibility(View.INVISIBLE);
         // Show the view with the movies after setting them.
@@ -179,54 +173,31 @@ public class MainActivity extends AppCompatActivity implements GetMoviesAsyncTas
         int menuId = item.getItemId();
         Log.i(TAG, "The menu item " + menuId + " was clicked.");
         switch (menuId) {
-            case R.id.main_refresh:
-                Log.i(TAG, "The refresh menu item was clicked.");
-                loadMovies(getApplicationContext());
-                return true;
             case R.id.main_sort_popularity:
                 Log.i(TAG, "The sort by popularity menu item was clicked.");
-                movieSortOrder = MovieSort.POPULARITY;
+                viewModel.setMovieSortOrder(MovieSort.POPULARITY);
                 loadMovies(getApplicationContext());
+                // The movie sort has been reselected, reset the scroll position.
+                mMoviesRecyclerView.getLayoutManager().scrollToPosition(0);
                 return true;
             case R.id.main_sort_rating:
                 Log.i(TAG, "The sort by rating menu item was clicked.");
-                movieSortOrder = MovieSort.RATED;
+                viewModel.setMovieSortOrder(MovieSort.RATED);
                 loadMovies(getApplicationContext());
+                // The movie sort has been reselected, reset the scroll position.
+                mMoviesRecyclerView.getLayoutManager().scrollToPosition(0);
                 return true;
             case R.id.main_sort_favourites:
                 Log.i(TAG, "The sort by favourites menu item was clicked.");
-                movieSortOrder = MovieSort.FAVOURITES;
+                viewModel.setMovieSortOrder(MovieSort.FAVOURITES);
                 loadMovies(getApplicationContext());
+                // The movie sort has been reselected, reset the scroll position.
+                mMoviesRecyclerView.getLayoutManager().scrollToPosition(0);
                 return true;
             default:
                 Log.w(TAG, "There was no match for the clicked menu item " + menuId + ".");
                 return super.onOptionsItemSelected(item);
         }
-    }
-
-    @Override
-    public void onGetMoviesTaskStart() {
-        // Now the task is starting, show the progress bar.
-        mMoviesLoadingProgressBar.setVisibility(View.VISIBLE);
-    }
-
-    @Override
-    public void onGetMoviesTaskProgressUpdate(int progress) {
-        Log.d(TAG, "Progress update '" + progress + "'.");
-        mMoviesLoadingProgressBar.setProgress(progress, true);
-    }
-
-    @Override
-    public void onGetMoviesTaskCompletion(List<Movie> movies) {
-        // No matter what, the task has finished, hide the progress bar.
-        mMoviesLoadingProgressBar.setVisibility(View.INVISIBLE);
-        // Check the the Movies are present before use.
-        if (movies == null) {
-            showError(getString(R.string.movie_load_error));
-            return;
-        }
-        // The movies are present, show them on the UI.
-        showMovies(movies);
     }
 
     private class NetworkBroadcastReceiver extends BroadcastReceiver {
@@ -250,6 +221,8 @@ public class MainActivity extends AppCompatActivity implements GetMoviesAsyncTas
                 // We don't want to reload as they may be happy on the favourite movies selection.
                 String message = "Internet connection has been restored, you can change the sort order to load new movies.";
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+                // In case they were not previously available, load the movies now.
+                viewModel.refreshOnlineMovies(context);
             } else {
                 String message = "Internet connection has been lost, will load your saved (favourite) movies.";
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show();

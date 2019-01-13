@@ -14,7 +14,10 @@ import uk.ab.popularmovies.entities.Movie;
 public interface MovieDao {
 
     @Query("SELECT * FROM movie")
-    LiveData<List<Movie>> getAllMovies();
+    List<Movie> getAllMovies();
+
+    @Query("SELECT * FROM movie")
+    LiveData<List<Movie>> getAllMoviesLive();
 
     @Query("SELECT * FROM movie WHERE id = :movieId")
     LiveData<Movie> getMovieFromId(Integer movieId);
